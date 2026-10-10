@@ -125,6 +125,21 @@ export default function App() {
     });
   }, [scroll.key]);
 
+  const [dataVersion, setDataVersion] = useState(0);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  useEffect(() => {
+    storeRepo.onSaveError((msg) => setSaveError(msg));
+    return () => storeRepo.onSaveError(null);
+  }, []);
+  useEffect(() => {
+    if (route.name !== 'admin' || !storeRepo.isServerMode()) return;
+    storeRepo.syncFromServer().then(() => {
+      setProducts(storeRepo.getProducts());
+      setSettings(storeRepo.getSettings());
+      setDataVersion((v) => v + 1);
+    });
+  }, [route.name === 'admin' ? route.tab : '']);
+
   // Redirects: signed-in staff skip the login form; an empty bag has no checkout
   useEffect(() => {
     if (route.name === 'login' && authenticatedStaff) navigate(route.next ?? '/admin/dashboard', { replace: true });
@@ -219,9 +234,9 @@ export default function App() {
   };
 
   // Coupons
-  const handleApplyCoupon = (code: string) => {
+  const handleApplyCoupon = async (code: string) => {
     const subtotal = cart.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
-    const result = storeRepo.validateCoupon(code, subtotal);
+    const result = await storeRepo.checkCoupon(code, subtotal);
     if (result.valid) {
       setAppliedCoupon(code.toUpperCase());
       setCouponDiscount(result.discountAmount);
@@ -338,6 +353,13 @@ export default function App() {
             navigate('/');
           }}
         >
+          {saveError && (
+            <div className="mb-6 px-4 py-3 bg-red-50 border border-red-200 text-sm text-red-700 flex items-center justify-between gap-4">
+              <span>{lang === 'so' ? 'Lama kaydin: ' : 'Not saved: '}{saveError}</span>
+              <button onClick={() => setSaveError(null)} className="underline cursor-pointer">OK</button>
+            </div>
+          )}
+          <div key={dataVersion} className="contents">
           {!activeTab && (
             <p className="text-sm text-fg-3">
               {lang === 'so' ? 'Doorkaagu weli wax ogolaansho ah ma laha. La xiriir milkiilaha.' : 'Your role has no access yet. Contact the owner.'}
@@ -369,6 +391,7 @@ export default function App() {
               onSettingsUpdated={(newSettings) => setSettings(newSettings)}
             />
           )}
+          </div>
         </AdminLayout>
       </>
     );

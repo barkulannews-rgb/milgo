@@ -47,7 +47,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ lang }) => {
   const activeOwners = staffList.filter((s) => s.role === 'owner' && s.active).length;
   const isLastOwner = (s: StaffUser) => s.role === 'owner' && s.active && activeOwners <= 1;
 
-  const handleAddStaff = (e: React.FormEvent) => {
+  const handleAddStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     if (!newName.trim() || !newEmail.trim() || !newPassword.trim()) {
@@ -58,7 +58,7 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ lang }) => {
       setFormError(so ? 'Email-kan horay ayuu u jiray.' : 'This email is already used.');
       return;
     }
-    storeRepo.saveStaffUser({
+    const err = await storeRepo.saveStaffUser({
       id: `usr-${Date.now()}`,
       name: newName.trim(),
       email: newEmail.trim().toLowerCase(),
@@ -67,6 +67,10 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ lang }) => {
       password: newPassword.trim(),
       active: true,
     });
+    if (err) {
+      setFormError(err);
+      return;
+    }
     refresh();
     setIsAddOpen(false);
     setNewName('');
@@ -75,34 +79,37 @@ export const AdminUsers: React.FC<AdminUsersProps> = ({ lang }) => {
     setNewPassword('');
   };
 
-  const handleRoleChange = (s: StaffUser, role: StaffRole) => {
+  const handleRoleChange = async (s: StaffUser, role: StaffRole) => {
     if (isLastOwner(s) && role !== 'owner') {
       flash(so ? 'Ugu yaraan hal milkiile waa inuu jiraa.' : 'The store needs at least one owner.');
       return;
     }
-    storeRepo.saveStaffUser({ ...s, role });
+    const err = await storeRepo.saveStaffUser({ ...s, role });
     refresh();
+    if (err) return flash(err);
     flash(so ? `${s.name}: ${roleLabel(role, 'so')}` : `${s.name} is now ${roleLabel(role, 'en')}`);
   };
 
-  const handleToggleActive = (s: StaffUser) => {
+  const handleToggleActive = async (s: StaffUser) => {
     if (isLastOwner(s) || s.id === me.id) return;
-    storeRepo.saveStaffUser({ ...s, active: !s.active });
+    const err = await storeRepo.saveStaffUser({ ...s, active: !s.active });
     refresh();
+    if (err) flash(err);
   };
 
-  const handleDelete = (s: StaffUser) => {
+  const handleDelete = async (s: StaffUser) => {
     if (s.role === 'owner' || s.id === me.id) return;
     if (window.confirm(so ? `Ma tirtiraysaa ${s.name}?` : `Remove ${s.name}?`)) {
-      storeRepo.deleteStaffUser(s.id);
+      await storeRepo.deleteStaffUser(s.id);
       refresh();
     }
   };
 
-  const handleSavePassword = (e: React.FormEvent) => {
+  const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!passwordFor || !updatedPassword.trim()) return;
-    storeRepo.saveStaffUser({ ...passwordFor, password: updatedPassword.trim() });
+    const err = await storeRepo.saveStaffUser({ ...passwordFor, password: updatedPassword.trim() });
+    if (err) return flash(err);
     refresh();
     setPasswordFor(null);
     setUpdatedPassword('');

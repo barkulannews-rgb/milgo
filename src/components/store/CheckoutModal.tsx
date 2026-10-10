@@ -55,7 +55,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const so = lang === 'so';
   const payments = storeRepo.getPaymentSettings();
   const markets = storeRepo.getMarketSettings();
-  const testMode = payments.mode === 'test';
+  // With the server: cards/Apple/Google Pay go to Stripe's secure page and PayPal to PayPal, and each is
+  // offered only when its account is connected. Without a server (local demo) payments are simulated.
+  const server = storeRepo.isServerMode();
+  const gw = storeRepo.getGateways();
+  const testMode = !server && payments.mode === 'test';
+  const stripeOk = !server || gw.stripe;
+  const paypalOk = !server || gw.paypal;
 
   const countries = useMemo(
     () => sortedCountries(lang, markets.sellWorldwide ? undefined : markets.allowedCountries),
@@ -92,11 +98,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   // Payment options depend on the destination: wallets and cash on delivery only where configured.
   const methods: MethodOption[] = useMemo(() => {
     const list: MethodOption[] = [];
-    if (payments.cards.enabled)
+    if (payments.cards.enabled && stripeOk)
       list.push({ id: 'Credit / Debit Card', title: so ? 'Kaarka Bangiga' : 'Credit / Debit Card', hint: 'Visa · Mastercard · Amex', icon: CreditCard });
-    if (payments.paypal.enabled) list.push({ id: 'PayPal', title: 'PayPal', hint: so ? 'Akoon ama kaar' : 'Account or card', icon: Wallet });
-    if (payments.applePay) list.push({ id: 'Apple Pay', title: 'Apple Pay', hint: 'iPhone · Mac', icon: Smartphone });
-    if (payments.googlePay) list.push({ id: 'Google Pay', title: 'Google Pay', hint: 'Android · Chrome', icon: Smartphone });
+    if (payments.paypal.enabled && paypalOk) list.push({ id: 'PayPal', title: 'PayPal', hint: so ? 'Akoon ama kaar' : 'Account or card', icon: Wallet });
+    if (payments.applePay && stripeOk) list.push({ id: 'Apple Pay', title: 'Apple Pay', hint: 'iPhone · Mac', icon: Smartphone });
+    if (payments.googlePay && stripeOk) list.push({ id: 'Google Pay', title: 'Google Pay', hint: 'Android · Chrome', icon: Smartphone });
     if (payments.mobileMoney.enabled && payments.mobileMoney.countries.includes(country))
       payments.mobileMoney.wallets
         .filter((w) => w.enabled)
@@ -106,7 +112,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (payments.cashOnDelivery.enabled && payments.cashOnDelivery.countries.includes(country))
       list.push({ id: 'Cash on Delivery', title: so ? 'Lacag Caddaan ah' : 'Cash on Delivery', hint: so ? 'Bixi marka aad hesho' : 'Pay upon receipt', icon: Banknote });
     return list;
-  }, [payments, country, so]);
+  }, [payments, country, so, stripeOk, paypalOk]);
 
   // Keep zone and method selections valid when the destination changes
   useEffect(() => {
@@ -154,12 +160,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (!deliveryAddress.trim())
       return fail('Please enter your street address.', 'Fadlan geli cinwaanka gaarsiinta (wadada, dhismaha ama calaamad).');
     if (!paymentMethod) return fail('Please choose a payment method.', 'Fadlan dooro hab lacag-bixin.');
-    if (isGatewayMethod && !testMode)
+    if (isGatewayMethod && !testMode && !server)
       return fail(
         'Online payments are being connected. Please choose another payment method for now.',
         'Lacag-bixinta online-ka weli lama xirin. Fadlan hadda dooro hab kale.'
       );
-    if (paymentMethod === 'Credit / Debit Card') {
+    if (paymentMethod === 'Credit / Debit Card' && !server) {
       if (!cardName.trim()) return fail('Please enter the name on the card.', 'Fadlan geli magaca kaarka ku qoran.');
       if (!luhnValid(cardNumber)) return fail('That card number is not valid.', 'Lambarka kaarku sax maaha.');
       if (!cardBrand || !payments.cards.brands.includes(cardBrand))
@@ -170,7 +176,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     if (!validate() || !paymentMethod || !selectedZone) return;
@@ -218,7 +224,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         ? 'Paid'
         : 'Unpaid';
 
-      const result = storeRepo.createOrder({
+      const request = {
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim() || undefined,
+        country,
+        countryName: countryName(country, 'en'),
+        city: cityZones ? undefined : city.trim(),
+        postalCode: postalCode.trim() || undefined,
+        zoneId: selectedZone.id,
+        deliveryAddress: deliveryAddress.trim(),
+        deliveryInstructions: deliveryInstructions.trim() || undefined,
+        paymentMethod,
+        paymentReference: paymentReference.trim() || undefined,
+        couponCode: appliedCoupon || undefined,
+        items: items.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+      };
+
+      const result = await storeRepo.placeOrder({
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         customerEmail: customerEmail.trim() || undefined,
@@ -242,7 +265,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         paymentReference: gatewayDetails?.transactionId || paymentReference.trim() || undefined,
         paymentGatewayDetails: gatewayDetails,
         orderStatus: 'Pending',
-      });
+      }, request);
 
       if (!result.success || !result.order) {
         setErrorMsg(result.error || 'Failed to place order.');
@@ -250,6 +273,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         return;
       }
 
+      if (result.redirectUrl) {
+        // Off to Stripe / PayPal; they send the shopper back to the order page when paid
+        onOrderSuccess(result.order);
+        window.location.href = result.redirectUrl;
+        return;
+      }
       setIsSubmitting(false);
       onOrderSuccess(result.order);
     } catch (err: any) {
@@ -453,7 +482,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             )}
 
             {/* Card details */}
-            {paymentMethod === 'Credit / Debit Card' && (
+            {server && (paymentMethod === 'Credit / Debit Card' || paymentMethod === 'Apple Pay' || paymentMethod === 'Google Pay') && (
+              <p className="text-xs text-fg-3">
+                {so ? 'Waxaad lacagta ku bixinaysaa bogga ammaanka ah ee Stripe.' : "You'll pay on Stripe's secure page."}
+              </p>
+            )}
+
+            {paymentMethod === 'Credit / Debit Card' && !server && (
               <div className="p-4 border border-line space-y-3">
                 <div className="flex flex-wrap items-center gap-1.5">
                   {CARD_BRANDS.filter((b) => payments.cards.brands.includes(b.id)).map((b) => (
@@ -519,7 +554,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             )}
 
             {/* Wallet redirects */}
-            {(paymentMethod === 'PayPal' || paymentMethod === 'Apple Pay' || paymentMethod === 'Google Pay') && (
+            {(paymentMethod === 'PayPal' || (!server && (paymentMethod === 'Apple Pay' || paymentMethod === 'Google Pay'))) && (
               <p className="text-xs text-fg-3">
                 {so ? `Waxaad ku xaqiijinaysaa ${paymentMethod}.` : `You'll confirm with ${paymentMethod}.`}
               </p>

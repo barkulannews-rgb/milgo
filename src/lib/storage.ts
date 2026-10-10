@@ -23,6 +23,7 @@ import {
 import { SOMALIA, ZONE_COUNTRY_DEFAULTS } from './countries';
 import { BASE_CURRENCY, LEGACY_USD_TO_GBP } from './money';
 import { DEFAULT_ROLE_PERMISSIONS, OWNER_ONLY, Permission, DelegatedRole } from './permissions';
+import { api, ApiError, Bootstrap, OrderRequest, TrackedOrder } from './api';
 
 import { formatMoney } from './money';
 // Initial high-fidelity product images generated
@@ -947,7 +948,15 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   return fallback;
 }
 
+// Collections the API accepts through "save"; orders, staff and the audit log have their own endpoints
+const REMOTE_KEYS = new Set(['products', 'movements', 'suppliers', 'purchases', 'expenses', 'delivery_zones', 'coupons', 'settings']);
+let remoteSave: ((key: string, data: unknown) => void) | null = null;
+
 function saveToStorage<T>(key: string, data: T): boolean {
+  if (remoteSave) {
+    if (REMOTE_KEYS.has(key)) remoteSave(key, data);
+    return true;
+  }
   try {
     localStorage.setItem(`milgo_${key}`, JSON.stringify(data));
     return true;
@@ -973,6 +982,11 @@ class StoreRepository {
   private auditLogs: AuditLog[];
   private settings: StoreSettings;
   private currentStaff: StaffUser;
+  // Server mode: data lives in MySQL behind /api; local mode (no server reachable) keeps the browser-only demo
+  private serverMode = false;
+  private serverMe: StaffUser | null = null;
+  private gateways = { stripe: false, paypal: false };
+  private saveErrorListener: ((message: string) => void) | null = null;
 
   constructor() {
     this.products = loadFromStorage('products', INITIAL_PRODUCTS);
@@ -989,6 +1003,129 @@ class StoreRepository {
     this.currentStaff = this.getAuthenticatedStaff() ?? STOREFRONT_ACTOR;
     this.migrateToGbp();
     this.migrateBrand();
+  }
+
+  // --- Server connection ---
+  async init(): Promise<void> {
+    try {
+      const boot = await api.bootstrap();
+      this.applyServerData(boot);
+      this.serverMode = true;
+      // The server is the source of truth: drop browser-only demo data (keeps cart, wishlist, theme, language)
+      for (const k of ['products', 'orders', 'suppliers', 'purchases', 'movements', 'expenses', 'delivery_zones', 'coupons', 'staff', 'audit_logs', 'settings', 'staff_session']) {
+        localStorage.removeItem(`milgo_${k}`);
+      }
+      remoteSave = (key, data) => {
+        api.save(key, data).catch((err: ApiError) => this.saveErrorListener?.(err.message));
+      };
+    } catch {
+      // No API (local development without PHP, or offline): stay in browser-only mode
+    }
+  }
+
+  private applyServerData(d: Bootstrap): void {
+    this.products = d.products ?? [];
+    this.settings = { ...INITIAL_SETTINGS, ...(Array.isArray(d.settings) ? {} : d.settings) };
+    this.deliveryZones = d.delivery_zones ?? [];
+    this.orders = d.orders ?? [];
+    this.stockMovements = d.movements ?? [];
+    this.suppliers = d.suppliers ?? [];
+    this.purchaseOrders = d.purchases ?? [];
+    this.expenses = d.expenses ?? [];
+    this.coupons = d.coupons ?? [];
+    this.auditLogs = d.audit_logs ?? [];
+    this.serverMe = d.me;
+    this.staff = d.staff ?? [];
+    if (d.me && !this.staff.some((s) => s.id === d.me!.id)) this.staff = [d.me, ...this.staff];
+    this.currentStaff = d.me ?? STOREFRONT_ACTOR;
+    this.gateways = d.gateways ?? { stripe: false, paypal: false };
+  }
+
+  // Re-read everything the signed-in role may see (after sign-in, order changes, or page switches)
+  async syncFromServer(): Promise<void> {
+    if (!this.serverMode) return;
+    try {
+      this.applyServerData(await api.bootstrap());
+    } catch {
+      /* keep the data we have */
+    }
+  }
+
+  isServerMode(): boolean {
+    return this.serverMode;
+  }
+
+  getGateways(): { stripe: boolean; paypal: boolean } {
+    return this.gateways;
+  }
+
+  onSaveError(listener: ((message: string) => void) | null): void {
+    this.saveErrorListener = listener;
+  }
+
+  async login(identifier: string, password: string): Promise<{ success: boolean; staff?: StaffUser; error?: string }> {
+    if (!this.serverMode) return this.authenticateStaff(identifier, password);
+    try {
+      const { me } = await api.login(identifier, password);
+      this.serverMe = me;
+      this.currentStaff = me;
+      await this.syncFromServer();
+      return { success: true, staff: me };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
+    }
+  }
+
+  // Checkout: the server prices the order and, for card/PayPal, returns the payment page to send the shopper to
+  async placeOrder(
+    local: Omit<Order, 'id' | 'createdAt' | 'statusHistory'>,
+    request: OrderRequest
+  ): Promise<{ success: boolean; order?: Order; redirectUrl?: string | null; error?: string }> {
+    if (!this.serverMode) return this.createOrder(local);
+    try {
+      const { order, redirectUrl } = await api.orderCreate(request);
+      await this.syncFromServer();
+      return { success: true, order, redirectUrl };
+    } catch (err) {
+      return { success: false, error: (err as Error).message };
+    }
+  }
+
+  async checkCoupon(code: string, subtotal: number): Promise<{ valid: boolean; discountAmount: number; message: string }> {
+    if (!this.serverMode) return this.validateCoupon(code, subtotal);
+    try {
+      const r = await api.couponCheck(code, subtotal);
+      return { valid: r.valid, discountAmount: r.discount, message: r.message };
+    } catch (err) {
+      return { valid: false, discountAmount: 0, message: (err as Error).message };
+    }
+  }
+
+  async trackOrder(id: string, phone: string): Promise<TrackedOrder | null> {
+    if (this.serverMode) {
+      try {
+        return (await api.track(id, phone)).order;
+      } catch {
+        return null;
+      }
+    }
+    const digits = phone.replace(/\D/g, '');
+    const o = this.orders.find((x) => x.id.toLowerCase() === id.trim().toLowerCase());
+    if (!o) return null;
+    const own = o.customerPhone.replace(/\D/g, '');
+    if (digits && !own.includes(digits) && !digits.includes(own)) return null;
+    return o;
+  }
+
+  private async remoteOrderUpdate(orderId: string, patch: Record<string, unknown>): Promise<string | null> {
+    try {
+      const { order } = await api.orderUpdate(orderId, patch);
+      this.orders = this.orders.map((o) => (o.id === order.id ? order : o));
+      await this.syncFromServer();
+      return null;
+    } catch (err) {
+      return (err as Error).message;
+    }
   }
 
   // --- Products ---
@@ -1109,7 +1246,8 @@ class StoreRepository {
     return { success: true, order: newOrder };
   }
 
-  updateOrderStatus(orderId: string, newStatus: OrderStatus, note?: string): void {
+  updateOrderStatus(orderId: string, newStatus: OrderStatus, note?: string): void | Promise<string | null> {
+    if (this.serverMode) return this.remoteOrderUpdate(orderId, { status: newStatus, note });
     if (!this.requirePermission('orders', 'update order status')) return;
     const order = this.getOrderById(orderId);
     if (!order) return;
@@ -1155,7 +1293,8 @@ class StoreRepository {
     saveToStorage('orders', this.orders);
   }
 
-  updateOrderPayment(orderId: string, status: PaymentStatus, reference?: string): void {
+  updateOrderPayment(orderId: string, status: PaymentStatus, reference?: string): void | Promise<string | null> {
+    if (this.serverMode) return this.remoteOrderUpdate(orderId, { paymentStatus: status, paymentReference: reference });
     if (!this.requirePermission('orders', 'update payment')) return;
     const order = this.getOrderById(orderId);
     if (!order) return;
@@ -1168,7 +1307,8 @@ class StoreRepository {
     saveToStorage('orders', this.orders);
   }
 
-  assignOrderCourier(orderId: string, courierName: string, staffId?: string): void {
+  assignOrderCourier(orderId: string, courierName: string, staffId?: string): void | Promise<string | null> {
+    if (this.serverMode) return this.remoteOrderUpdate(orderId, { courierName, courierStaffId: staffId ?? null });
     if (!this.requirePermission('orders', 'assign courier')) return;
     const order = this.getOrderById(orderId);
     if (!order) return;
@@ -1500,6 +1640,7 @@ class StoreRepository {
   }
 
   getAuthenticatedStaff(): StaffUser | null {
+    if (this.serverMode) return this.serverMe;
     try {
       const session = localStorage.getItem('milgo_staff_session');
       if (!session) return null;
@@ -1594,9 +1735,22 @@ class StoreRepository {
     }
     localStorage.removeItem('milgo_staff_session');
     this.currentStaff = STOREFRONT_ACTOR;
+    if (this.serverMode) {
+      this.serverMe = null;
+      api.logout().finally(() => this.syncFromServer());
+    }
   }
 
-  saveStaffUser(user: StaffUser): void {
+  saveStaffUser(user: StaffUser): void | Promise<string | null> {
+    if (this.serverMode) {
+      return api.staffSave(user).then(
+        ({ staff }) => {
+          this.staff = staff;
+          return null;
+        },
+        (err: Error) => err.message
+      );
+    }
     if (!this.requirePermission('users', 'save staff')) return;
     const existing = this.staff.find((s) => s.id === user.id);
     const otherOwners = this.staff.filter((s) => s.id !== user.id && s.role === 'owner' && s.active);
@@ -1615,7 +1769,16 @@ class StoreRepository {
     saveToStorage('staff', this.staff);
   }
 
-  deleteStaffUser(id: string): boolean {
+  deleteStaffUser(id: string): boolean | Promise<boolean> {
+    if (this.serverMode) {
+      return api.staffDelete(id).then(
+        ({ staff }) => {
+          this.staff = staff;
+          return true;
+        },
+        () => false
+      );
+    }
     if (!this.requirePermission('users', 'delete staff')) return false;
     const user = this.staff.find((s) => s.id === id);
     if (!user || user.role === 'owner') return false; // Prevent removing owner
@@ -1641,6 +1804,10 @@ class StoreRepository {
       details,
     };
     this.auditLogs.unshift(newLog);
+    if (this.serverMode) {
+      if (this.serverMe) api.audit({ action, entityType, entityId, details }).catch(() => {});
+      return;
+    }
     if (this.auditLogs.length > 300) {
       this.auditLogs = this.auditLogs.slice(0, 300);
     }

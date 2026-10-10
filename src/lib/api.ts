@@ -1,0 +1,86 @@
+// Client for the PHP API in public/api (served at /api/ on Hostinger, proxied by Vite in development).
+
+import type { Order, StaffUser } from '../types';
+
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
+async function call<T>(action: string, opts: { body?: unknown; query?: Record<string, string>; timeoutMs?: number } = {}): Promise<T> {
+  const query = new URLSearchParams({ a: action, ...(opts.query ?? {}) });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 20000);
+  try {
+    const res = await fetch(`/api/?${query}`, {
+      method: opts.body === undefined ? 'GET' : 'POST',
+      credentials: 'same-origin',
+      // The custom header is required by the API for writes, which blocks cross-site form posts
+      headers: opts.body === undefined ? {} : { 'Content-Type': 'application/json', 'X-DK-Client': '1' },
+      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      signal: ctrl.signal,
+    });
+    if (!(res.headers.get('content-type') ?? '').includes('application/json')) throw new ApiError(res.status, 'Server not available');
+    const data = await res.json();
+    if (!res.ok) throw new ApiError(res.status, data.error ?? 'Request failed');
+    return data as T;
+  } catch (err) {
+    if (err instanceof ApiError) throw err;
+    throw new ApiError(0, 'Could not reach the server. Check your connection.');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export interface Bootstrap {
+  products: any[];
+  settings: any;
+  delivery_zones: any[];
+  gateways: { stripe: boolean; paypal: boolean };
+  me: StaffUser | null;
+  orders?: Order[];
+  movements?: any[];
+  suppliers?: any[];
+  purchases?: any[];
+  expenses?: any[];
+  coupons?: any[];
+  audit_logs?: any[];
+  staff?: StaffUser[];
+}
+
+export interface OrderRequest {
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  country: string; // ISO code
+  countryName: string;
+  city?: string;
+  postalCode?: string;
+  zoneId: string;
+  deliveryAddress: string;
+  deliveryInstructions?: string;
+  paymentMethod: string;
+  paymentReference?: string;
+  couponCode?: string;
+  items: { productId: string; variantId: string; quantity: number }[];
+}
+
+export type TrackedOrder = Pick<Order, 'id' | 'city' | 'orderStatus' | 'assignedDeliveryPerson' | 'createdAt'> & {
+  items: { productName: string; size: string; quantity: number; subtotal: number }[];
+};
+
+export const api = {
+  bootstrap: () => call<Bootstrap>('bootstrap', { timeoutMs: 6000 }),
+  login: (identifier: string, password: string) => call<{ me: StaffUser }>('login', { body: { identifier, password } }),
+  logout: () => call<{ ok: true }>('logout', { body: {} }),
+  save: (key: string, value: unknown) => call<{ ok: true }>('save', { body: { key, value } }),
+  audit: (entry: { action: string; entityType: string; entityId: string; details: string }) => call<{ ok: true }>('audit', { body: entry }),
+  staffSave: (user: Partial<StaffUser> & { password?: string }) => call<{ staff: StaffUser[] }>('staff_save', { body: { user } }),
+  staffDelete: (id: string) => call<{ staff: StaffUser[] }>('staff_delete', { body: { id } }),
+  couponCheck: (code: string, subtotal: number) =>
+    call<{ valid: boolean; discount: number; message: string }>('coupon_check', { body: { code, subtotal } }),
+  orderCreate: (req: OrderRequest) => call<{ order: Order; redirectUrl: string | null }>('order_create', { body: req }),
+  orderUpdate: (id: string, patch: Record<string, unknown>) => call<{ order: Order }>('order_update', { body: { id, ...patch } }),
+  track: (id: string, phone: string) => call<{ order: TrackedOrder }>('track', { query: { id, phone } }),
+};

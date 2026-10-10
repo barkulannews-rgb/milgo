@@ -133,17 +133,37 @@ export const AdminPayments: React.FC<AdminPaymentsProps> = ({ lang, onSettingsUp
         </div>
       )}
 
-      {/* Processing mode */}
-      <div className="px-5 py-4 border border-amber-200 bg-amber-50 text-amber-800">
-        <div className="space-y-1">
-          <p className="font-semibold">{so ? 'Habka tijaabada' : 'Test mode'}</p>
-          <p>
-            {so
-              ? 'Kaarka iyo PayPal lacag dhab ah ma qaadaan ilaa server lagu xiro.'
-              : 'Cards and PayPal take no real money until a server is connected.'}
+      {/* Connection status: real payments need the server plus each provider's keys */}
+      {storeRepo.isServerMode() ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {(
+            [
+              ['Stripe', storeRepo.getGateways().stripe, so ? 'Kaar, Apple Pay, Google Pay' : 'Cards, Apple Pay, Google Pay'],
+              ['PayPal', storeRepo.getGateways().paypal, 'PayPal'],
+            ] as const
+          ).map(([name, ok, what]) => (
+            <div key={name} className={`px-5 py-4 border ${ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
+              <p className="font-semibold">
+                {name}: {ok ? (so ? 'Waa xiran yahay, lacag dhab ah' : 'Connected, live payments') : so ? 'Lama xirin' : 'Not connected'}
+              </p>
+              <p className="mt-1">
+                {ok
+                  ? what
+                  : so
+                  ? `${what} kama muuqdaan checkout-ka ilaa furayaasha ${name} la geliyo faylka config-ka server-ka.`
+                  : `${what} stay hidden at checkout until the ${name} keys are added to the server config file.`}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="px-5 py-4 border border-amber-200 bg-amber-50 text-amber-800">
+          <p className="font-semibold">{so ? 'Habka tijaabada (server la\'aan)' : 'Demo mode (no server)'}</p>
+          <p className="mt-1">
+            {so ? 'Kaarka iyo PayPal waa tijaabo ilaa website-ka uu server ku xirmo.' : 'Cards and PayPal are simulated until the site runs with its server.'}
           </p>
         </div>
-      </div>
+      )}
 
       {/* Markets */}
       <Section

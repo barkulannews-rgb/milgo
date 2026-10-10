@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { Order, OrderStatus, Language, StoreSettings } from '../../types';
+import { OrderStatus, Language, StoreSettings } from '../../types';
+import type { TrackedOrder } from '../../lib/api';
 import { getTranslation } from '../../lib/translations';
 import { storeRepo } from '../../lib/storage';
 
@@ -31,30 +32,28 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
 }) => {
   const [orderIdInput, setOrderIdInput] = useState(initialOrderId || '');
   const [phoneInput, setPhoneInput] = useState('');
-  const [matchedOrder, setMatchedOrder] = useState<Order | null>(
-    initialOrderId ? storeRepo.getOrderById(initialOrderId) || null : null
-  );
-  const [hasSearched, setHasSearched] = useState(Boolean(initialOrderId));
+  const [matchedOrder, setMatchedOrder] = useState<TrackedOrder | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Look the order up on the server, so tracking works from any phone or computer
+  const lookup = async (id: string, phone: string) => {
+    if (!id.trim()) return;
+    setLoading(true);
+    setMatchedOrder(await storeRepo.trackOrder(id, phone));
+    setHasSearched(true);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (initialOrderId) lookup(initialOrderId, '');
+  }, [initialOrderId]);
 
   if (!isOpen) return null;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setHasSearched(true);
-    const query = orderIdInput.trim();
-    if (!query) return;
-
-    const found = storeRepo.getOrders().find((o) => {
-      const idMatch = o.id.toLowerCase() === query.toLowerCase();
-      if (phoneInput.trim()) {
-        const cleanPhoneInput = phoneInput.replace(/[^0-9]/g, '');
-        const cleanOrderPhone = o.customerPhone.replace(/[^0-9]/g, '');
-        return idMatch && (cleanOrderPhone.includes(cleanPhoneInput) || cleanPhoneInput.includes(cleanOrderPhone));
-      }
-      return idMatch;
-    });
-
-    setMatchedOrder(found || null);
+    lookup(orderIdInput, phoneInput);
   };
 
   const getStepIndex = (status: OrderStatus): number => {
@@ -115,7 +114,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
               type="submit"
               className="w-full py-3.5 bg-inverse hover:bg-inverse-hover text-on-inverse text-xs uppercase tracking-[0.16em] transition-colors cursor-pointer"
             >
-              {getTranslation(lang, 'checkStatus')}
+              {loading ? (lang === 'so' ? 'Waa la raadinayaa…' : 'Searching…') : getTranslation(lang, 'checkStatus')}
             </button>
           </form>
 

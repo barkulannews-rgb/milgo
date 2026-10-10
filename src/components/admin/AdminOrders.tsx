@@ -65,29 +65,37 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ lang, settings }) => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
+  const handleUpdateStatus = async (orderId: string, newStatus: OrderStatus) => {
     if (newStatus === 'Cancelled' && !window.confirm('Cancelling this order will release and restore its reserved stock to inventory. Proceed?')) {
       return;
     }
-    storeRepo.updateOrderStatus(orderId, newStatus, statusNote.trim() || undefined);
+    const err = await storeRepo.updateOrderStatus(orderId, newStatus, statusNote.trim() || undefined);
+    if (err) alert(err);
     setStatusNote('');
     refreshOrders();
   };
 
-  const handleUpdatePayment = (orderId: string, newStatus: PaymentStatus) => {
+  const handleUpdatePayment = async (orderId: string, newStatus: PaymentStatus) => {
     const ref = prompt('Enter payment transaction reference (optional):', selectedOrder?.paymentReference || '');
-    storeRepo.updateOrderPayment(orderId, newStatus, ref || undefined);
+    const err = await storeRepo.updateOrderPayment(orderId, newStatus, ref || undefined);
+    if (err) alert(err);
     refreshOrders();
   };
 
   // Value is a staff id, or "external" to type the name of an outside courier
-  const handleAssignCourier = (orderId: string, value: string) => {
+  const handleAssignCourier = async (orderId: string, value: string) => {
     if (value === 'external') {
       const name = prompt(lang === 'so' ? 'Magaca shirkadda gaarsiinta:' : 'External courier name:', '');
-      if (name?.trim()) storeRepo.assignOrderCourier(orderId, name.trim());
+      if (name?.trim()) {
+        const err = await storeRepo.assignOrderCourier(orderId, name.trim());
+        if (err) alert(err);
+      }
     } else {
       const staff = couriers.find((c) => c.id === value);
-      if (staff) storeRepo.assignOrderCourier(orderId, staff.name, staff.id);
+      if (staff) {
+        const err = await storeRepo.assignOrderCourier(orderId, staff.name, staff.id);
+        if (err) alert(err);
+      }
     }
     refreshOrders();
   };

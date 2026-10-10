@@ -17,6 +17,8 @@ export default defineConfig(() => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // PHP API in development: run `php -S 127.0.0.1:8080 -t public` (see server/README.md)
+      proxy: { '/api': { target: process.env.DK_API_URL ?? 'http://127.0.0.1:8080' } },
     },
   };
 });

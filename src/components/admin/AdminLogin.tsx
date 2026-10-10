@@ -34,21 +34,14 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
 
   const staffMembers = storeRepo.getStaff();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-
-    setTimeout(() => {
-      const result = storeRepo.authenticateStaff(identifier, password);
-      setIsLoading(false);
-
-      if (result.success && result.staff) {
-        onLoginSuccess(result.staff);
-      } else {
-        setError(result.error || getTranslation(lang, 'invalidCredentials'));
-      }
-    }, 400);
+    const result = await storeRepo.login(identifier, password);
+    setIsLoading(false);
+    if (result.success && result.staff) onLoginSuccess(result.staff);
+    else setError(result.error || getTranslation(lang, 'invalidCredentials'));
   };
 
   const fillCredentials = (email: string, pass: string) => {
@@ -149,6 +142,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
             </button>
           </form>
 
+          {!storeRepo.isServerMode() && (
           <div className="mt-10 text-center">
             <button
               type="button"
@@ -177,6 +171,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
               </div>
             )}
           </div>
+          )}
         </div>
       </main>
     </div>
