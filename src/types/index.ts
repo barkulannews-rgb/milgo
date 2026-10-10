@@ -50,6 +50,24 @@ export interface Product {
   createdAt: string;
 }
 
+// A customer's rating of a perfume. Only buyers can leave one: it is tied to a delivered order.
+export interface Review {
+  id: string;
+  productId: string;
+  productName: string;
+  orderId: string;
+  name: string; // shown as first name + initial, e.g. "Hodan C."
+  rating: number; // 1-5
+  text: string;
+  createdAt: string;
+  hidden?: boolean; // hidden by staff; not shown in the shop or counted
+}
+
+export interface RatingSummary {
+  avg: number;
+  count: number;
+}
+
 export interface CartItem {
   productId: string;
   variantId: string;
@@ -255,16 +273,6 @@ export interface Coupon {
   timesUsed: number;
   expiryDate: string;
   active: boolean;
-}
-
-export interface StoreReview {
-  id: string;
-  productId: string;
-  customerName: string;
-  rating: number; // 1 to 5
-  comment: string;
-  date: string;
-  verifiedPurchase: boolean;
 }
 
 export type StaffRole = 'owner' | 'manager' | 'sales' | 'inventory' | 'accountant' | 'delivery';

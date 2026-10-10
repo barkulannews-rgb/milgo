@@ -295,7 +295,8 @@ function track_order(string $id, string $phone): array
         'city' => $o['city'],
         'orderStatus' => $o['orderStatus'],
         'assignedDeliveryPerson' => $o['assignedDeliveryPerson'] ?? null,
-        'items' => array_map(fn($i) => ['productName' => $i['productName'], 'size' => $i['size'], 'quantity' => $i['quantity'], 'subtotal' => $i['subtotal']], $o['items']),
+        'ratings' => order_ratings($o['id']),
+        'items' => array_map(fn($i) => ['productId' => $i['productId'], 'productName' => $i['productName'], 'size' => $i['size'], 'quantity' => $i['quantity'], 'subtotal' => $i['subtotal']], $o['items']),
         'createdAt' => $o['createdAt'],
     ];
 }

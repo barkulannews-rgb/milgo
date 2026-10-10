@@ -4,6 +4,7 @@ import { Product, ProductVariant, Language, StoreSettings } from '../../types';
 import { getTranslation } from '../../lib/translations';
 
 import { formatMoney } from '../../lib/money';
+import { ProductReviews } from './ProductReviews';
 interface ProductDetailModalProps {
   product: Product | null;
   lang: Language;
@@ -14,6 +15,7 @@ interface ProductDetailModalProps {
   onBuyNow: (product: Product, variant: ProductVariant, quantity: number) => void;
   isWishlisted: boolean;
   onToggleWishlist: (productId: string) => void;
+  onOpenTracker: () => void;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -26,6 +28,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onBuyNow,
   isWishlisted,
   onToggleWishlist,
+  onOpenTracker,
 }) => {
   if (!isOpen || !product) return null;
 
@@ -112,11 +115,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               <h2 className="font-serif text-3xl sm:text-4xl text-fg mt-1 mb-2">{displayName}</h2>
               <div className="flex items-center gap-3 text-xs text-fg-3 mb-5">
                 <span>{product.concentration}</span>
-                <span aria-hidden="true">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Star className="w-3.5 h-3.5 fill-current text-gold" strokeWidth={0} />
-                  {product.rating.toFixed(1)} ({product.reviewCount})
-                </span>
+                {product.reviewCount > 0 && <span aria-hidden="true">·</span>}
+                {product.reviewCount > 0 && (
+                  <a
+                    href="#reviews"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('reviews')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="inline-flex items-center gap-1 hover:text-fg"
+                  >
+                    <Star className="w-3.5 h-3.5 fill-current text-gold" strokeWidth={0} />
+                    {product.rating.toFixed(1)} ({product.reviewCount})
+                  </a>
+                )}
               </div>
 
               <div className="flex items-baseline gap-3 mb-6 font-mono">
@@ -225,6 +237,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             </div>
           </div>
         </div>
+        <ProductReviews productId={product.id} lang={lang} onOpenTracker={onOpenTracker} />
       </div>
     </div>
   );

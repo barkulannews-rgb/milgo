@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Check } from 'lucide-react';
+import { Heart, Check, Star } from 'lucide-react';
 import { Product, ProductVariant, Language } from '../../types';
 import { getTranslation } from '../../lib/translations';
 
@@ -104,6 +104,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="pt-4 flex flex-col gap-1">
         <span className="text-[11px] uppercase tracking-[0.14em] text-fg-3">{product.brand}</span>
         <h3 className="font-serif text-lg text-fg leading-snug line-clamp-1">{displayName}</h3>
+        {product.reviewCount > 0 && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-fg-3">
+            <Star className="w-3 h-3 fill-current text-gold" strokeWidth={0} />
+            {product.rating.toFixed(1)} ({product.reviewCount})
+          </span>
+        )}
 
         <div className="flex items-center justify-between gap-2 mt-1">
           <div className="flex items-baseline gap-2 font-mono">

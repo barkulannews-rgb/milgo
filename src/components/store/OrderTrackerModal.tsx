@@ -6,6 +6,7 @@ import { getTranslation } from '../../lib/translations';
 import { storeRepo } from '../../lib/storage';
 
 import { formatMoney } from '../../lib/money';
+import { RateOrder } from './RateOrder';
 interface OrderTrackerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -35,12 +36,14 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
   const [matchedOrder, setMatchedOrder] = useState<TrackedOrder | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searchedPhone, setSearchedPhone] = useState('');
 
   // Look the order up on the server, so tracking works from any phone or computer
   const lookup = async (id: string, phone: string) => {
     if (!id.trim()) return;
     setLoading(true);
     setMatchedOrder(await storeRepo.trackOrder(id, phone));
+    setSearchedPhone(phone);
     setHasSearched(true);
     setLoading(false);
   };
@@ -184,6 +187,10 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                       ))}
                     </div>
                   </div>
+
+                  {matchedOrder.orderStatus === 'Delivered' && (
+                    <RateOrder key={matchedOrder.id} order={matchedOrder} phone={searchedPhone} lang={lang} />
+                  )}
                 </div>
               ) : (
                 <p className="text-center text-sm text-fg-3 py-4">

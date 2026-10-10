@@ -12,6 +12,7 @@ require __DIR__ . '/lib/auth.php';
 require __DIR__ . '/lib/payments.php';
 require __DIR__ . '/lib/orders.php';
 require __DIR__ . '/lib/uploads.php';
+require __DIR__ . '/lib/reviews.php';
 
 // Which roles may read / write each shared collection
 const READERS = [
@@ -22,6 +23,7 @@ const READERS = [
     'expenses' => ['expenses', 'finances', 'profit'],
     'coupons' => ['promotions'],
     'audit_logs' => ['users'],
+    'reviews' => ['products'],
 ];
 const WRITERS = [
     'products' => ['products', 'inventory', 'purchases'],
@@ -44,7 +46,7 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     // Browser calls that change data must carry this header; plain cross-site forms cannot set it
-    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check', 'upload'];
+    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check', 'upload', 'review_create', 'review_moderate'];
     if (in_array($a, $writes, true) && (($_SERVER['HTTP_X_DK_CLIENT'] ?? '') !== '1' || $method !== 'POST')) fail(400, 'Bad request.');
 
     switch ($a) {
@@ -54,6 +56,7 @@ try {
                 'products' => kv_get('products', []),
                 'settings' => kv_get('settings', new stdClass()),
                 'delivery_zones' => kv_get('delivery_zones', []),
+                'ratings' => rating_summary() ?: new stdClass(),
                 'gateways' => ['stripe' => gateway_ready('Stripe'), 'paypal' => gateway_ready('PayPal')],
                 'me' => $me ? public_staff($me) : null,
             ];
@@ -117,6 +120,16 @@ try {
 
         case 'img':
             send_upload((string) ($_GET['f'] ?? ''));
+
+        case 'reviews':
+            send_json(['reviews' => product_reviews((string) ($_GET['product'] ?? ''))]);
+
+        case 'review_create':
+            send_json(['review' => review_submit(body())]);
+
+        case 'review_moderate':
+            $me = require_any(['products']);
+            send_json(['reviews' => review_moderate(body(), $me)]);
 
         case 'audit':
             $me = current_staff() ?? fail(401, 'Please sign in.');

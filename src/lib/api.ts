@@ -1,6 +1,6 @@
 // Client for the PHP API in public/api (served at /api/ on Hostinger, proxied by Vite in development).
 
-import type { Order, StaffUser } from '../types';
+import type { Order, RatingSummary, Review, StaffUser } from '../types';
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -39,6 +39,7 @@ export interface Bootstrap {
   products: any[];
   settings: any;
   delivery_zones: any[];
+  ratings?: Record<string, RatingSummary>;
   gateways: { stripe: boolean; paypal: boolean };
   me: StaffUser | null;
   orders?: Order[];
@@ -48,6 +49,7 @@ export interface Bootstrap {
   expenses?: any[];
   coupons?: any[];
   audit_logs?: any[];
+  reviews?: Review[];
   staff?: StaffUser[];
 }
 
@@ -69,8 +71,19 @@ export interface OrderRequest {
 }
 
 export type TrackedOrder = Pick<Order, 'id' | 'city' | 'orderStatus' | 'assignedDeliveryPerson' | 'createdAt'> & {
-  items: { productName: string; size: string; quantity: number; subtotal: number }[];
+  items: { productId: string; productName: string; size: string; quantity: number; subtotal: number }[];
+  ratings?: Record<string, number>; // stars already given on this order, by product
 };
+
+export type PublicReview = Pick<Review, 'id' | 'name' | 'rating' | 'text' | 'createdAt'>;
+
+export interface ReviewRequest {
+  orderId: string;
+  phone: string;
+  productId: string;
+  rating: number;
+  text: string;
+}
 
 export const api = {
   bootstrap: () => call<Bootstrap>('bootstrap', { timeoutMs: 6000 }),
@@ -89,5 +102,9 @@ export const api = {
     form.append('file', file, name);
     return call<{ url: string }>('upload', { body: form, timeoutMs: 60000 });
   },
+  reviews: (productId: string) => call<{ reviews: PublicReview[] }>('reviews', { query: { product: productId } }),
+  reviewCreate: (req: ReviewRequest) => call<{ review: Review }>('review_create', { body: req }),
+  reviewModerate: (id: string, change: { hidden?: boolean; delete?: boolean }) =>
+    call<{ reviews: Review[] }>('review_moderate', { body: { id, ...change } }),
   track: (id: string, phone: string) => call<{ order: TrackedOrder }>('track', { query: { id, phone } }),
 };

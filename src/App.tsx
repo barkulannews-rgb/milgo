@@ -31,7 +31,7 @@ import { AdminLayout, AdminTab } from './components/admin/AdminLayout';
 
 const ADMIN_TABS: AdminTab[] = ['dashboard', 'orders', 'products', 'inventory', 'purchases', 'delivery', 'promotions', 'hero', 'expenses', 'finances', 'reports', 'users', 'payments', 'settings'];
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { AdminProducts } from './components/admin/AdminProducts';
+import { AdminCatalog } from './components/admin/AdminCatalog';
 import { AdminInventory } from './components/admin/AdminInventory';
 import { AdminPurchases } from './components/admin/AdminPurchases';
 import { AdminOrders } from './components/admin/AdminOrders';
@@ -347,7 +347,7 @@ export default function App() {
           {activeTab === 'dashboard' && (
             <AdminDashboard lang={lang} settings={settings} onNavigateTab={goAdminTab} />
           )}
-          {activeTab === 'products' && <AdminProducts lang={lang} />}
+          {activeTab === 'products' && <AdminCatalog lang={lang} />}
           {activeTab === 'inventory' && <AdminInventory lang={lang} />}
           {activeTab === 'purchases' && <AdminPurchases lang={lang} />}
           {activeTab === 'orders' && <AdminOrders lang={lang} settings={settings} />}
@@ -482,6 +482,7 @@ export default function App() {
         onBuyNow={handleBuyNow}
         isWishlisted={quickViewProduct ? wishlist.includes(quickViewProduct.id) : false}
         onToggleWishlist={handleToggleWishlist}
+        onOpenTracker={() => navigate('/track', { scroll: 'none' })}
       />
 
       {/* Checkout Modal */}

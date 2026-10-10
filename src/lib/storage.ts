@@ -8,7 +8,8 @@ import {
   FinancialTransaction,
   DeliveryZone,
   Coupon,
-  StoreReview,
+  Review,
+  RatingSummary,
   StaffUser,
   AuditLog,
   StoreSettings,
@@ -23,7 +24,7 @@ import {
 import { SOMALIA, ZONE_COUNTRY_DEFAULTS } from './countries';
 import { BASE_CURRENCY, LEGACY_USD_TO_GBP } from './money';
 import { DEFAULT_ROLE_PERMISSIONS, OWNER_ONLY, Permission, DelegatedRole } from './permissions';
-import { api, ApiError, Bootstrap, OrderRequest, TrackedOrder } from './api';
+import { api, ApiError, Bootstrap, OrderRequest, PublicReview, ReviewRequest, TrackedOrder } from './api';
 import { compressImage, resizeImage } from './images';
 
 import { formatMoney } from './money';
@@ -934,6 +935,19 @@ const INITIAL_STOCK_MOVEMENTS: StockMovement[] = [
   },
 ];
 
+// Average stars and count per product, ignoring hidden reviews
+function summarise(reviews: Review[]): Record<string, RatingSummary> {
+  const out: Record<string, RatingSummary> = {};
+  for (const r of reviews) {
+    if (r.hidden) continue;
+    const s = (out[r.productId] ??= { avg: 0, count: 0 });
+    s.avg = (s.avg * s.count + r.rating) / (s.count + 1);
+    s.count++;
+  }
+  for (const s of Object.values(out)) s.avg = Math.round(s.avg * 10) / 10;
+  return out;
+}
+
 // Helper for storage persistence
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
@@ -982,6 +996,8 @@ class StoreRepository {
   private staff: StaffUser[];
   private auditLogs: AuditLog[];
   private settings: StoreSettings;
+  private reviews: Review[];
+  private ratings: Record<string, RatingSummary> = {};
   private currentStaff: StaffUser;
   // Server mode: data lives in MySQL behind /api; local mode (no server reachable) keeps the browser-only demo
   private serverMode = false;
@@ -1001,9 +1017,12 @@ class StoreRepository {
     this.staff = loadFromStorage('staff', INITIAL_STAFF);
     this.auditLogs = loadFromStorage('audit_logs', INITIAL_AUDIT_LOGS);
     this.settings = loadFromStorage('settings', INITIAL_SETTINGS);
+    this.reviews = loadFromStorage<Review[]>('reviews', []);
     this.currentStaff = this.getAuthenticatedStaff() ?? STOREFRONT_ACTOR;
     this.migrateToGbp();
     this.migrateBrand();
+    this.ratings = summarise(this.reviews);
+    this.applyRatings();
   }
 
   // --- Server connection ---
@@ -1013,7 +1032,7 @@ class StoreRepository {
       this.applyServerData(boot);
       this.serverMode = true;
       // The server is the source of truth: drop browser-only demo data (keeps cart, wishlist, theme, language)
-      for (const k of ['products', 'orders', 'suppliers', 'purchases', 'movements', 'expenses', 'delivery_zones', 'coupons', 'staff', 'audit_logs', 'settings', 'staff_session']) {
+      for (const k of ['products', 'orders', 'suppliers', 'purchases', 'movements', 'expenses', 'delivery_zones', 'coupons', 'staff', 'audit_logs', 'settings', 'reviews', 'staff_session']) {
         localStorage.removeItem(`milgo_${k}`);
       }
       remoteSave = (key, data) => {
@@ -1040,6 +1059,90 @@ class StoreRepository {
     if (d.me && !this.staff.some((s) => s.id === d.me!.id)) this.staff = [d.me, ...this.staff];
     this.currentStaff = d.me ?? STOREFRONT_ACTOR;
     this.gateways = d.gateways ?? { stripe: false, paypal: false };
+    this.reviews = d.reviews ?? [];
+    this.ratings = d.ratings && !Array.isArray(d.ratings) ? d.ratings : {};
+    this.applyRatings();
+  }
+
+  // Stars and counts on products always come from real customer reviews
+  private applyRatings(): void {
+    this.products = this.products.map((p) => ({ ...p, rating: this.ratings[p.id]?.avg ?? 0, reviewCount: this.ratings[p.id]?.count ?? 0 }));
+  }
+
+  // --- Reviews ---
+  async getProductReviews(productId: string): Promise<PublicReview[]> {
+    if (this.serverMode) {
+      try {
+        return (await api.reviews(productId)).reviews;
+      } catch {
+        return [];
+      }
+    }
+    return this.reviews
+      .filter((r) => r.productId === productId && !r.hidden)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(({ id, name, rating, text, createdAt }) => ({ id, name, rating, text, createdAt }));
+  }
+
+  // A buyer rates a perfume from a delivered order (checked again on the server)
+  async submitReview(req: ReviewRequest): Promise<{ success: boolean; error?: string }> {
+    if (this.serverMode) {
+      try {
+        await api.reviewCreate(req);
+        await this.syncFromServer();
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: (err as Error).message };
+      }
+    }
+    const order = this.orders.find((o) => o.id.toLowerCase() === req.orderId.trim().toLowerCase());
+    const digits = req.phone.replace(/\D/g, '');
+    const own = order?.customerPhone.replace(/\D/g, '') ?? '';
+    if (!order || digits.length < 6 || (!own.includes(digits) && !digits.includes(own))) return { success: false, error: 'Order number and phone do not match.' };
+    if (order.orderStatus !== 'Delivered') return { success: false, error: 'You can rate once your order has been delivered.' };
+    const item = order.items.find((i) => i.productId === req.productId);
+    if (!item) return { success: false, error: 'This perfume is not in the order.' };
+    const parts = order.customerName.trim().split(/\s+/);
+    const review: Review = {
+      id: this.reviews.find((r) => r.orderId === order.id && r.productId === req.productId)?.id ?? `rev-${Date.now()}`,
+      productId: req.productId,
+      productName: item.productName,
+      orderId: order.id,
+      name: parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0].toUpperCase()}.` : parts[0],
+      rating: Math.min(5, Math.max(1, Math.round(req.rating))),
+      text: req.text.trim().slice(0, 1000),
+      createdAt: new Date().toISOString(),
+    };
+    this.reviews = [...this.reviews.filter((r) => r.id !== review.id), review];
+    this.saveReviewsLocally();
+    return { success: true };
+  }
+
+  getReviews(): Review[] {
+    return [...this.reviews].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+
+  async moderateReview(id: string, change: { hidden?: boolean; delete?: boolean }): Promise<{ success: boolean; error?: string }> {
+    if (!this.requirePermission('products', 'moderate review')) return { success: false, error: 'Not allowed for your role.' };
+    if (this.serverMode) {
+      try {
+        await api.reviewModerate(id, change);
+        await this.syncFromServer();
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: (err as Error).message };
+      }
+    }
+    this.reviews = change.delete ? this.reviews.filter((r) => r.id !== id) : this.reviews.map((r) => (r.id === id ? { ...r, hidden: !!change.hidden } : r));
+    this.saveReviewsLocally();
+    return { success: true };
+  }
+
+  private saveReviewsLocally(): void {
+    saveToStorage('reviews', this.reviews);
+    this.ratings = summarise(this.reviews);
+    this.applyRatings();
+    saveToStorage('products', this.products);
   }
 
   // Re-read everything the signed-in role may see (after sign-in, order changes, or page switches)
@@ -1128,7 +1231,8 @@ class StoreRepository {
     if (!o) return null;
     const own = o.customerPhone.replace(/\D/g, '');
     if (digits && !own.includes(digits) && !digits.includes(own)) return null;
-    return o;
+    const ratings = Object.fromEntries(this.reviews.filter((r) => r.orderId === o.id).map((r) => [r.productId, r.rating]));
+    return { ...o, ratings };
   }
 
   private async remoteOrderUpdate(orderId: string, patch: Record<string, unknown>): Promise<string | null> {
