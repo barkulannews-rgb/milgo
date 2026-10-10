@@ -18,6 +18,11 @@ concurrency:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    env:
+      # Optional direct upload. Add these in GitHub: Settings -> Secrets and variables -> Actions.
+      FTP_SERVER: ${{ secrets.FTP_SERVER }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -40,3 +45,16 @@ jobs:
           folder: dist
           clean: true
           commit-message: 'Deploy ${{ github.sha }}'
+
+      # Uploads dist/ straight into public_html over FTPS when the FTP secrets exist.
+      # Only changed files are sent; the server config (outside public_html) is never touched.
+      - name: Upload to Hostinger over FTP
+        if: env.FTP_SERVER != '' && env.FTP_USERNAME != '' && env.FTP_PASSWORD != ''
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ env.FTP_SERVER }}
+          username: ${{ env.FTP_USERNAME }}
+          password: ${{ env.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_DIR || 'public_html/' }}
