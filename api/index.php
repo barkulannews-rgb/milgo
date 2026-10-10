@@ -11,6 +11,7 @@ require __DIR__ . '/lib/db.php';
 require __DIR__ . '/lib/auth.php';
 require __DIR__ . '/lib/payments.php';
 require __DIR__ . '/lib/orders.php';
+require __DIR__ . '/lib/uploads.php';
 
 // Which roles may read / write each shared collection
 const READERS = [
@@ -43,7 +44,7 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     // Browser calls that change data must carry this header; plain cross-site forms cannot set it
-    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check'];
+    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check', 'upload'];
     if (in_array($a, $writes, true) && (($_SERVER['HTTP_X_DK_CLIENT'] ?? '') !== '1' || $method !== 'POST')) fail(400, 'Bad request.');
 
     switch ($a) {
@@ -109,6 +110,13 @@ try {
             if (!is_array($value)) fail(422, 'Invalid data.');
             kv_set($key, $value, $me['name']);
             send_json(['ok' => true]);
+
+        case 'upload':
+            require_any(['products', 'inventory', 'purchases', 'hero']);
+            send_json(['url' => save_upload($_FILES['file'] ?? [])]);
+
+        case 'img':
+            send_upload((string) ($_GET['f'] ?? ''));
 
         case 'audit':
             $me = current_staff() ?? fail(401, 'Please sign in.');
