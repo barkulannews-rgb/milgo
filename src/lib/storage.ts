@@ -16,6 +16,7 @@ import {
   OrderStatus,
   PaymentStatus,
   HeroSlide,
+  CollectionsSection,
   PaymentSettings,
   MarketSettings,
 } from '../types';
@@ -25,10 +26,10 @@ import { DEFAULT_ROLE_PERMISSIONS, OWNER_ONLY, Permission, DelegatedRole } from 
 
 import { formatMoney } from './money';
 // Initial high-fidelity product images generated
-const HERO_IMAGE = '/src/assets/images/hero_luxury_perfume_1791620587322.jpg';
-const OUD_IMAGE = '/src/assets/images/perfume_royal_oud_1791620599669.jpg';
-const ROSE_IMAGE = '/src/assets/images/perfume_rose_elixir_1791620610051.jpg';
-const NOIR_IMAGE = '/src/assets/images/perfume_noir_intense_1791620620862.jpg';
+const HERO_IMAGE = '/images/hero_luxury_perfume_1791620587322.jpg';
+const OUD_IMAGE = '/images/perfume_royal_oud_1791620599669.jpg';
+const ROSE_IMAGE = '/images/perfume_rose_elixir_1791620610051.jpg';
+const NOIR_IMAGE = '/images/perfume_noir_intense_1791620620862.jpg';
 
 export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   mode: 'test',
@@ -49,7 +50,7 @@ export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
   bankTransfer: {
     enabled: true,
     bankName: 'Barclays Bank UK',
-    accountName: 'Milgo Parfums Ltd',
+    accountName: 'DK Perfume Ltd',
     iban: '',
     swift: '',
     instructions: 'Use your order number as the transfer reference. Orders ship once funds arrive.',
@@ -71,6 +72,19 @@ export const DEFAULT_MARKET_SETTINGS: MarketSettings = {
   ],
 };
 
+export const DEFAULT_COLLECTIONS: CollectionsSection = {
+  active: true,
+  titleEn: 'Collections',
+  titleSo: 'Xulalka',
+  subtitleEn: 'Shop by scent family',
+  subtitleSo: 'Ku iibso nooca udugga',
+  cards: [
+    { id: 'col-oud', titleEn: 'Oud & Amber', titleSo: 'Cuud & Canbar', descEn: 'Agarwood, frankincense, amber', descSo: 'Cuud, luubaan, canbar', image: OUD_IMAGE, family: 'Oriental', active: true },
+    { id: 'col-rose', titleEn: 'Rose & Florals', titleSo: 'Ubax & Roose', descEn: 'Damask rose, white musk, peony', descSo: 'Roose, misk cad, ubax', image: ROSE_IMAGE, family: 'Floral', active: true },
+    { id: 'col-woods', titleEn: 'Woods & Leather', titleSo: 'Qori & Maqaar', descEn: 'Cedar, vetiver, leather', descSo: 'Kedar, fiitfeer, maqaar', image: NOIR_IMAGE, family: 'Woody', active: true },
+  ],
+};
+
 export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
   {
     id: 'hero-001',
@@ -86,11 +100,12 @@ export const DEFAULT_HERO_SLIDES: HeroSlide[] = [
 ];
 
 const INITIAL_SETTINGS: StoreSettings = {
-  storeName: 'Milgo Parfums',
+  dataVersion: 2,
+  storeName: 'DK Perfume',
   taglineEn: 'Fine fragrances from London to the world.',
   taglineSo: 'Cadar qaali ah, London ilaa adduunka.',
   phone: '+252 61 748 5100',
-  email: 'info@milgoparfums.so',
+  email: 'info@dkperfume.com',
   address: 'London, United Kingdom',
   // Seed figures below were authored in USD; migrateToGbp() converts them on first load.
   currency: 'USD',
@@ -100,8 +115,8 @@ const INITIAL_SETTINGS: StoreSettings = {
   announcementBarTextSo: 'Gaarsiin bilaash ah UK £60 ka badan · Dirid caalami ah',
   announcementBarActive: true,
   whatsappNumber: '+252617485100',
-  instagram: 'milgoparfums',
-  facebook: 'milgoparfums',
+  instagram: 'dkperfume',
+  facebook: 'dkperfume',
   payments: DEFAULT_PAYMENT_SETTINGS,
   markets: DEFAULT_MARKET_SETTINGS,
   heroSlides: DEFAULT_HERO_SLIDES,
@@ -112,7 +127,7 @@ const INITIAL_PRODUCTS: Product[] = [
     id: 'prod-001',
     name: 'Qadir Royal Oud',
     nameSo: 'Cuudka Boqortooyada Qadir',
-    brand: 'Milgo Signature',
+    brand: 'DK Signature',
     category: 'Luxury Oud',
     fragranceFamily: 'Oriental',
     concentration: 'Extrait de Parfum',
@@ -160,7 +175,7 @@ const INITIAL_PRODUCTS: Product[] = [
     id: 'prod-002',
     name: 'Noir Éclat Intense',
     nameSo: 'Noir Éclat - Madowga Iftiimaya',
-    brand: 'Milgo Signature',
+    brand: 'DK Signature',
     category: 'Men',
     fragranceFamily: 'Woody',
     concentration: 'Eau de Parfum',
@@ -207,7 +222,7 @@ const INITIAL_PRODUCTS: Product[] = [
     id: 'prod-003',
     name: 'Rose Électrique',
     nameSo: 'Ubaxa Roose ee Xariirta Ah',
-    brand: 'Milgo Signature',
+    brand: 'DK Signature',
     category: 'Women',
     fragranceFamily: 'Floral',
     concentration: 'Eau de Parfum',
@@ -254,7 +269,7 @@ const INITIAL_PRODUCTS: Product[] = [
     id: 'prod-004',
     name: 'Aurora D’Or Imperial',
     nameSo: 'Aurora D’Or - Dahabka Boqortooyada',
-    brand: 'Milgo Signature',
+    brand: 'DK Signature',
     category: 'Luxury Oud',
     fragranceFamily: 'Oriental',
     concentration: 'Parfum',
@@ -422,7 +437,7 @@ const INITIAL_PRODUCTS: Product[] = [
     id: 'prod-008',
     name: 'Citrus Riviera Breeze',
     nameSo: 'Nacnaca Liinta & Neecawda Badda',
-    brand: 'Milgo Signature',
+    brand: 'DK Signature',
     category: 'Unisex',
     fragranceFamily: 'Citrus',
     concentration: 'Eau de Parfum',
@@ -522,7 +537,7 @@ const INITIAL_DELIVERY_ZONES: DeliveryZone[] = [
 
 const INITIAL_COUPONS: Coupon[] = [
   {
-    code: 'MILGO10',
+    code: 'DK10',
     discountType: 'percentage',
     discountValue: 10,
     minOrderAmount: 50,
@@ -552,7 +567,7 @@ const INITIAL_COUPONS: Coupon[] = [
 
 const INITIAL_ORDERS: Order[] = [
   {
-    id: 'MLG-2026-1041',
+    id: 'DK-2026-1041',
     customerName: 'Amina Cali Maxamed',
     customerPhone: '+252 61 554 9920',
     customerEmail: 'amina.ali@gmail.com',
@@ -565,7 +580,7 @@ const INITIAL_ORDERS: Order[] = [
         productId: 'prod-001',
         variantId: 'var-001-50',
         productName: 'Qadir Royal Oud',
-        brand: 'Milgo Signature',
+        brand: 'DK Signature',
         size: '50ml',
         image: OUD_IMAGE,
         unitPrice: 95.0,
@@ -576,7 +591,7 @@ const INITIAL_ORDERS: Order[] = [
     ],
     subtotal: 95.0,
     discountAmount: 9.5,
-    couponCode: 'MILGO10',
+    couponCode: 'DK10',
     deliveryFee: 0.0, // Over $50 free delivery threshold
     tax: 0.0,
     grandTotal: 85.5,
@@ -596,7 +611,7 @@ const INITIAL_ORDERS: Order[] = [
     createdAt: '2026-03-01T09:30:00Z',
   },
   {
-    id: 'MLG-2026-1042',
+    id: 'DK-2026-1042',
     customerName: 'Xasan Cabdiraxmaan Nuur',
     customerPhone: '+252 61 722 8844',
     customerEmail: 'hassan.abdi@yahoo.com',
@@ -608,7 +623,7 @@ const INITIAL_ORDERS: Order[] = [
         productId: 'prod-002',
         variantId: 'var-002-100',
         productName: 'Noir Éclat Intense',
-        brand: 'Milgo Signature',
+        brand: 'DK Signature',
         size: '100ml',
         image: NOIR_IMAGE,
         unitPrice: 115.0,
@@ -620,7 +635,7 @@ const INITIAL_ORDERS: Order[] = [
         productId: 'prod-004',
         variantId: 'var-004-50',
         productName: 'Aurora D’Or Imperial',
-        brand: 'Milgo Signature',
+        brand: 'DK Signature',
         size: '50ml',
         image: HERO_IMAGE,
         unitPrice: 120.0,
@@ -649,7 +664,7 @@ const INITIAL_ORDERS: Order[] = [
     createdAt: '2026-03-02T14:10:00Z',
   },
   {
-    id: 'MLG-2026-1043',
+    id: 'DK-2026-1043',
     customerName: 'Fartuun Cumar Xaaji',
     customerPhone: '+252 61 889 1234',
     city: 'Hargeisa',
@@ -660,7 +675,7 @@ const INITIAL_ORDERS: Order[] = [
         productId: 'prod-003',
         variantId: 'var-003-100',
         productName: 'Rose Électrique',
-        brand: 'Milgo Signature',
+        brand: 'DK Signature',
         size: '100ml',
         image: ROSE_IMAGE,
         unitPrice: 125.0,
@@ -688,7 +703,7 @@ const INITIAL_ORDERS: Order[] = [
     createdAt: '2026-03-03T10:00:00Z',
   },
   {
-    id: 'MLG-2026-1044',
+    id: 'DK-2026-1044',
     customerName: 'Cabdiweli Jaamac Faarax',
     customerPhone: '+252 61 334 7711',
     city: 'Mogadishu',
@@ -855,12 +870,12 @@ const INITIAL_PURCHASE_ORDERS: PurchaseOrder[] = [
 ];
 
 const INITIAL_STAFF: StaffUser[] = [
-  { id: 'usr-1', name: 'Milgo Owner / Admin', email: 'owner@milgoparfums.so', phone: '+252 61 748 5100', role: 'owner', active: true, password: 'admin' },
-  { id: 'usr-2', name: 'Zahra Barre', email: 'zahra.manager@milgoparfums.so', phone: '+252 61 888 2211', role: 'manager', active: true, password: 'manager' },
-  { id: 'usr-3', name: 'Cabdi Nuur', email: 'abdi.sales@milgoparfums.so', phone: '+252 61 777 3344', role: 'sales', active: true, password: 'sales' },
-  { id: 'usr-4', name: 'Shukri Xasan', email: 'shukri.inventory@milgoparfums.so', phone: '+252 61 666 4455', role: 'inventory', active: true, password: 'inventory' },
-  { id: 'usr-5', name: 'Ibraahim Jaamac', email: 'ibrahim.accountant@milgoparfums.so', phone: '+252 61 555 6677', role: 'accountant', active: true, password: 'accountant' },
-  { id: 'usr-6', name: 'Axmed Cabdi', email: 'ahmed.delivery@milgoparfums.so', phone: '+252 61 444 8899', role: 'delivery', active: true, password: 'delivery' },
+  { id: 'usr-1', name: 'DK Owner', email: 'owner@dkperfume.com', phone: '+252 61 748 5100', role: 'owner', active: true, password: 'admin' },
+  { id: 'usr-2', name: 'Zahra Barre', email: 'zahra.manager@dkperfume.com', phone: '+252 61 888 2211', role: 'manager', active: true, password: 'manager' },
+  { id: 'usr-3', name: 'Cabdi Nuur', email: 'abdi.sales@dkperfume.com', phone: '+252 61 777 3344', role: 'sales', active: true, password: 'sales' },
+  { id: 'usr-4', name: 'Shukri Xasan', email: 'shukri.inventory@dkperfume.com', phone: '+252 61 666 4455', role: 'inventory', active: true, password: 'inventory' },
+  { id: 'usr-5', name: 'Ibraahim Jaamac', email: 'ibrahim.accountant@dkperfume.com', phone: '+252 61 555 6677', role: 'accountant', active: true, password: 'accountant' },
+  { id: 'usr-6', name: 'Axmed Cabdi', email: 'ahmed.delivery@dkperfume.com', phone: '+252 61 444 8899', role: 'delivery', active: true, password: 'delivery' },
 ];
 
 const INITIAL_AUDIT_LOGS: AuditLog[] = [
@@ -868,11 +883,11 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
     id: 'log-01',
     timestamp: '2026-03-01T08:00:00Z',
     userId: 'usr-1',
-    userName: 'Milgo Owner',
+    userName: 'DK Owner',
     action: 'System Initialized',
     entityType: 'Store',
     entityId: 'global',
-    details: 'Milgo Parfums e-commerce store & ERP initial database bootstrapped successfully.',
+    details: 'DK Perfume store initialised.',
   },
   {
     id: 'log-02',
@@ -881,7 +896,7 @@ const INITIAL_AUDIT_LOGS: AuditLog[] = [
     userName: 'Cabdi Nuur (Sales)',
     action: 'Order Confirmed',
     entityType: 'Order',
-    entityId: 'MLG-2026-1041',
+    entityId: 'DK-2026-1041',
     details: 'Verified EVC Plus payment transaction #EVC-TXN-902188 and confirmed order.',
   },
 ];
@@ -910,7 +925,7 @@ const INITIAL_STOCK_MOVEMENTS: StockMovement[] = [
     quantityChange: -1,
     newBalance: 19,
     type: 'order_sold',
-    referenceId: 'MLG-2026-1041',
+    referenceId: 'DK-2026-1041',
     reason: 'Customer purchase delivered to Amina Cali Maxamed',
     performedBy: 'System',
     timestamp: '2026-03-01T09:30:00Z',
@@ -922,7 +937,8 @@ function loadFromStorage<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(`milgo_${key}`);
     if (raw) {
-      return JSON.parse(raw);
+      // Images moved from /src/assets/images (dev-only path) to /public/images, which ships in the build
+      return JSON.parse(raw.split('/src/assets/images/').join('/images/'));
     }
     return structuredClone(fallback);
   } catch (err) {
@@ -972,6 +988,7 @@ class StoreRepository {
     this.settings = loadFromStorage('settings', INITIAL_SETTINGS);
     this.currentStaff = this.getAuthenticatedStaff() ?? STOREFRONT_ACTOR;
     this.migrateToGbp();
+    this.migrateBrand();
   }
 
   // --- Products ---
@@ -1037,7 +1054,7 @@ class StoreRepository {
     // 2. Generate unique order ID
     const year = new Date().getFullYear();
     const count = this.orders.length + 1045;
-    const orderId = `MLG-${year}-${count}`;
+    const orderId = `DK-${year}-${count}`;
 
     // 3. Atomically deduct stock and create movement record
     for (const item of orderData.items) {
@@ -1658,6 +1675,23 @@ class StoreRepository {
     this.logAction('Payments Updated', 'Settings', 'payments', 'Updated payment methods and selling markets');
   }
 
+  // --- Homepage Collections ---
+  getCollections(): CollectionsSection {
+    return structuredClone(this.settings.collections ?? DEFAULT_COLLECTIONS);
+  }
+
+  saveCollections(collections: CollectionsSection): { success: boolean; error?: string } {
+    if (!this.requirePermission('hero', 'save collections')) return { success: false, error: 'Not allowed for your role.' };
+    const previous = this.settings;
+    this.settings = { ...this.settings, collections };
+    if (!saveToStorage('settings', this.settings)) {
+      this.settings = previous;
+      return { success: false, error: 'Browser storage is full. Use smaller images or image URLs, then save again.' };
+    }
+    this.logAction('Collections Updated', 'Settings', 'collections', `Saved ${collections.cards.length} homepage collection card(s)`);
+    return { success: true };
+  }
+
   // --- Homepage Hero Slides ---
   getHeroSlides(): HeroSlide[] {
     return [...(this.settings.heroSlides ?? DEFAULT_HERO_SLIDES)];
@@ -1676,6 +1710,37 @@ class StoreRepository {
     }
     this.logAction('Hero Banner Updated', 'Settings', 'hero', `Saved ${slides.length} homepage banner slide(s)`);
     return { success: true };
+  }
+
+  // --- One-time rebrand: Milgo Parfums -> DK Perfume (dkperfume.com) ---
+  private migrateBrand(): void {
+    if ((this.settings.dataVersion ?? 1) >= 2) return;
+    const brand = (b: string) => (b === 'Milgo Signature' ? 'DK Signature' : b);
+    const email = (m: string) => m.replace(/@milgoparfums\.so$/i, '@dkperfume.com');
+
+    for (const p of this.products) p.brand = brand(p.brand);
+    for (const o of this.orders) for (const it of o.items) it.brand = brand(it.brand);
+    for (const s of this.staff) {
+      s.email = email(s.email);
+      if (s.name === 'Milgo Owner / Admin') s.name = 'DK Owner';
+    }
+    const st = this.settings;
+    const payments = st.payments;
+    this.settings = {
+      ...st,
+      dataVersion: 2,
+      storeName: st.storeName === 'Milgo Parfums' ? 'DK Perfume' : st.storeName,
+      email: email(st.email),
+      instagram: st.instagram === 'milgoparfums' ? 'dkperfume' : st.instagram,
+      facebook: st.facebook === 'milgoparfums' ? 'dkperfume' : st.facebook,
+      payments: payments && payments.bankTransfer.accountName === 'Milgo Parfums Ltd'
+        ? { ...payments, bankTransfer: { ...payments.bankTransfer, accountName: 'DK Perfume Ltd' } }
+        : payments,
+    };
+    saveToStorage('products', this.products);
+    saveToStorage('orders', this.orders);
+    saveToStorage('staff', this.staff);
+    saveToStorage('settings', this.settings);
   }
 
   // --- One-time move to GBP (head office relocated to London) ---

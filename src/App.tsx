@@ -10,6 +10,7 @@ import {
   StaffUser,
 } from './types';
 import { storeRepo } from './lib/storage';
+import { useRouter } from './lib/router';
 import { AnnouncementBar } from './components/store/AnnouncementBar';
 import { Header } from './components/store/Header';
 import { Hero } from './components/store/Hero';
@@ -20,7 +21,7 @@ import { CartDrawer } from './components/store/CartDrawer';
 import { CheckoutModal } from './components/store/CheckoutModal';
 import { OrderSuccessModal } from './components/store/OrderSuccessModal';
 import { OrderTrackerModal } from './components/store/OrderTrackerModal';
-import { PolicyModals } from './components/store/PolicyModals';
+import { PolicyPage } from './components/store/PolicyPage';
 import { Footer } from './components/store/Footer';
 
 // Admin ERP & Auth components
@@ -40,13 +41,13 @@ import { AdminReports } from './components/admin/AdminReports';
 import { AdminPromotions } from './components/admin/AdminPromotions';
 import { AdminUsers } from './components/admin/AdminUsers';
 import { AdminSettings } from './components/admin/AdminSettings';
-import { AdminHero } from './components/admin/AdminHero';
+import { AdminHomepage } from './components/admin/AdminHomepage';
 import { AdminPayments } from './components/admin/AdminPayments';
 
 export default function App() {
-  // Main view router: 'store', 'admin-login', or 'admin'
-  const [currentView, setCurrentView] = useState<'store' | 'admin-login' | 'admin'>('store');
-  const [adminTab, setAdminTab] = useState<AdminTab>('dashboard');
+  // Every page has its own address (see lib/router): refresh stays put, Back goes to the previous page
+  const { route, navigate, back, navKey, scroll } = useRouter();
+  const goAdminTab = (tab: AdminTab) => navigate(`/admin/${tab}`);
 
   // Authenticated Staff Session (Null if guest / customer)
   const [authenticatedStaff, setAuthenticatedStaff] = useState<StaffUser | null>(() => {
@@ -107,14 +108,35 @@ export default function App() {
   const [couponDiscount, setCouponDiscount] = useState<number>(0);
   const [couponMessage, setCouponMessage] = useState<string>('');
 
-  // Modals & Drawers
+  // Drawers & overlays (product, checkout and tracker are routes, so Back closes them)
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
-  const [isTrackerOpen, setIsTrackerOpen] = useState(false);
-  const [trackerOrderId, setTrackerOrderId] = useState<string | undefined>(undefined);
-  const [activePolicy, setActivePolicy] = useState<'about' | 'authenticity' | 'shipping' | 'returns' | null>(null);
+  const quickViewProduct = route.name === 'product' ? products.find((p) => p.id === route.id) ?? null : null;
+  const isCheckoutOpen = route.name === 'checkout' && cart.length > 0;
+  const openProduct = (prod: Product) => navigate(`/product/${prod.id}`, { scroll: 'none' });
+
+  // Apply the scroll that goes with a link: new pages start at the top, shop links jump to the catalogue.
+  // Back/Forward and refresh are left to the browser, which restores the previous position.
+  useEffect(() => {
+    if (scroll.intent === 'none') return;
+    requestAnimationFrame(() => {
+      if (scroll.intent === 'catalog') document.getElementById('catalog-section')?.scrollIntoView({ behavior: 'smooth' });
+      else window.scrollTo({ top: 0 });
+    });
+  }, [scroll.key]);
+
+  // Redirects: signed-in staff skip the login form; an empty bag has no checkout
+  useEffect(() => {
+    if (route.name === 'login' && authenticatedStaff) navigate(route.next ?? '/admin/dashboard', { replace: true });
+    if (route.name === 'checkout' && cart.length === 0) navigate('/', { replace: true, scroll: 'none' });
+  }, [route, authenticatedStaff, cart.length]);
+
+  // Opened on a shop address (e.g. after refresh): bring the catalogue into view once it has rendered
+  useEffect(() => {
+    if (route.name === 'shop' && scroll.key === 0) {
+      setTimeout(() => document.getElementById('catalog-section')?.scrollIntoView(), 50);
+    }
+  }, []);
 
   // Sync cart & wishlist to localStorage
   useEffect(() => {
@@ -186,8 +208,7 @@ export default function App() {
   // Direct Buy Now
   const handleBuyNow = (product: Product, variant: ProductVariant, quantity = 1) => {
     handleAddToCart(product, variant, quantity);
-    setQuickViewProduct(null);
-    setIsCheckoutOpen(true);
+    navigate('/checkout', { replace: true, scroll: 'none' });
   };
 
   // Wishlist toggle
@@ -221,7 +242,8 @@ export default function App() {
   // Order submission
   const handleOrderSuccess = (order: Order) => {
     setConfirmedOrder(order);
-    setIsCheckoutOpen(false);
+    // Replace the checkout address so Back cannot reopen a finished checkout
+    navigate('/', { replace: true, scroll: 'none' });
     setIsCartOpen(false);
     setCart([]);
     setAppliedCoupon(null);
@@ -230,44 +252,36 @@ export default function App() {
     setProducts(storeRepo.getProducts());
   };
 
-  // Navigation helper
+  // Catalogue filter follows the address (#/shop/men, #/shop/family/Citrus); navKey re-applies it on Back/Forward
+  const catalogPreset =
+    route.name === 'shop' ? { family: route.family, gender: route.gender, nonce: navKey } : undefined;
+
+  // Header / hero links
   const handleNavigateSection = (section: string) => {
-    if (section === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      const el = document.getElementById('catalog-section');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
+    if (section === 'home') navigate('/', { scroll: 'top' });
+    else if (section === 'Men') navigate('/shop/men', { scroll: 'catalog' });
+    else if (section === 'Women') navigate('/shop/women', { scroll: 'catalog' });
+    else navigate('/shop', { scroll: 'catalog' });
   };
 
-  const handleOpenTracker = (orderId?: string) => {
-    setTrackerOrderId(orderId);
-    setIsTrackerOpen(true);
-  };
+  const handleOpenTracker = (orderId?: string) => navigate(orderId ? `/track/${orderId}` : '/track', { scroll: 'none' });
 
-  const handleOpenAdminPortal = () => {
-    if (authenticatedStaff) {
-      setCurrentView('admin');
-    } else {
-      setCurrentView('admin-login');
-    }
-  };
+  const handleOpenAdminPortal = () => navigate(authenticatedStaff ? '/admin/dashboard' : '/staff-login');
 
   const handleLoginSuccess = (user: StaffUser) => {
     setAuthenticatedStaff(user);
-    setCurrentView('admin');
+    navigate(route.name === 'login' && route.next ? route.next : '/admin/dashboard', { replace: true });
   };
 
   const handleLogout = () => {
     storeRepo.logoutStaff();
     setAuthenticatedStaff(null);
-    setCurrentView('store');
+    navigate('/');
   };
 
   // Render Admin Authentication Portal Gate
-  if (currentView === 'admin-login') {
+  if (route.name === 'login' && authenticatedStaff) return null; // redirected by the effect above
+  if (route.name === 'login') {
     return (
       <>
         <AdminLogin
@@ -277,14 +291,15 @@ export default function App() {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           onLoginSuccess={handleLoginSuccess}
-          onBackToStore={() => setCurrentView('store')}
+          onBackToStore={() => back('/')}
         />
       </>
     );
   }
 
   // Render Admin ERP view (Strictly protected by authentication)
-  if (currentView === 'admin') {
+  if (route.name === 'admin') {
+    const adminTab = route.tab as AdminTab;
     if (!authenticatedStaff) {
       return (
         <>
@@ -295,7 +310,7 @@ export default function App() {
             theme={theme}
             onToggleTheme={handleToggleTheme}
             onLoginSuccess={handleLoginSuccess}
-            onBackToStore={() => setCurrentView('store')}
+            onBackToStore={() => navigate('/')}
           />
         </>
       );
@@ -309,7 +324,7 @@ export default function App() {
       <>
         <AdminLayout
           currentTab={activeTab ?? adminTab}
-          onTabChange={setAdminTab}
+          onTabChange={goAdminTab}
           lang={lang}
           onLanguageChange={handleLanguageChange}
           theme={theme}
@@ -320,7 +335,7 @@ export default function App() {
           onExitToStore={() => {
             setProducts(storeRepo.getProducts());
             setSettings(storeRepo.getSettings());
-            setCurrentView('store');
+            navigate('/');
           }}
         >
           {!activeTab && (
@@ -329,7 +344,7 @@ export default function App() {
             </p>
           )}
           {activeTab === 'dashboard' && (
-            <AdminDashboard lang={lang} settings={settings} onNavigateTab={setAdminTab} />
+            <AdminDashboard lang={lang} settings={settings} onNavigateTab={goAdminTab} />
           )}
           {activeTab === 'products' && <AdminProducts lang={lang} />}
           {activeTab === 'inventory' && <AdminInventory lang={lang} />}
@@ -345,7 +360,7 @@ export default function App() {
             <AdminPayments lang={lang} onSettingsUpdated={(newSettings) => setSettings(newSettings)} />
           )}
           {activeTab === 'hero' && (
-            <AdminHero lang={lang} onSettingsUpdated={(newSettings) => setSettings(newSettings)} />
+            <AdminHomepage lang={lang} onSettingsUpdated={(newSettings) => setSettings(newSettings)} />
           )}
           {activeTab === 'settings' && (
             <AdminSettings
@@ -390,12 +405,16 @@ export default function App() {
         onOpenTrackOrder={() => handleOpenTracker()}
       />
 
+      {route.name === 'page' ? (
+        <PolicyPage page={route.page} lang={lang} onBack={() => back('/')} />
+      ) : (
+        <>
       {/* 3. Hero Showcase */}
       <Hero
         lang={lang}
         slides={settings.heroSlides}
         products={products}
-        onViewProduct={(prod) => setQuickViewProduct(prod)}
+        onViewProduct={openProduct}
         onExplore={() => handleNavigateSection('catalog')}
         onBestsellers={() => handleNavigateSection('catalog')}
       />
@@ -403,27 +422,31 @@ export default function App() {
       {/* 4. Curated Olfactory Collections */}
       <FeaturedCollections
         lang={lang}
-        onSelectFamily={() => handleNavigateSection('catalog')}
+        collections={settings.collections}
+        onSelectFamily={(family) => navigate(family === 'All' ? '/shop' : `/shop/family/${encodeURIComponent(family)}`, { scroll: 'catalog' })}
       />
 
       {/* 5. Complete Product Catalog */}
       <ProductCatalog
         products={products}
         lang={lang}
-        onQuickView={(prod) => setQuickViewProduct(prod)}
+        onQuickView={openProduct}
         onAddToCart={(prod, variant) => {
           handleAddToCart(prod, variant, 1);
           setIsCartOpen(true);
         }}
         wishlist={wishlist}
         onToggleWishlist={handleToggleWishlist}
+        preset={catalogPreset}
       />
+        </>
+      )}
 
       {/* 6. Footer */}
       <Footer
         settings={settings}
         lang={lang}
-        onOpenPolicy={(policy) => setActivePolicy(policy)}
+        onOpenPolicy={(policy) => navigate(`/${policy}`)}
         onOpenAdmin={handleOpenAdminPortal}
       />
 
@@ -438,7 +461,7 @@ export default function App() {
         onRemoveItem={handleRemoveCartItem}
         onProceedToCheckout={() => {
           setIsCartOpen(false);
-          setIsCheckoutOpen(true);
+          navigate('/checkout', { scroll: 'none' });
         }}
         appliedCoupon={appliedCoupon}
         couponDiscount={couponDiscount}
@@ -453,7 +476,7 @@ export default function App() {
         lang={lang}
         settings={settings}
         isOpen={Boolean(quickViewProduct)}
-        onClose={() => setQuickViewProduct(null)}
+        onClose={() => back('/')}
         onAddToCart={(prod, variant, qty) => {
           handleAddToCart(prod, variant, qty);
           setIsCartOpen(true);
@@ -466,7 +489,7 @@ export default function App() {
       {/* Checkout Modal */}
       <CheckoutModal
         isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
+        onClose={() => back('/')}
         items={cart}
         lang={lang}
         settings={settings}
@@ -487,24 +510,17 @@ export default function App() {
       />
 
       {/* Order Tracker Modal */}
-      <OrderTrackerModal
-        isOpen={isTrackerOpen}
-        onClose={() => {
-          setIsTrackerOpen(false);
-          setTrackerOrderId(undefined);
-        }}
-        lang={lang}
-        settings={settings}
-        initialOrderId={trackerOrderId}
-      />
+      {route.name === 'track' && (
+        <OrderTrackerModal
+          key={route.orderId ?? 'search'}
+          isOpen
+          onClose={() => back('/')}
+          lang={lang}
+          settings={settings}
+          initialOrderId={route.orderId}
+        />
+      )}
 
-      {/* Information & Policy Modals */}
-      <PolicyModals
-        activePolicy={activePolicy}
-        onClose={() => setActivePolicy(null)}
-        lang={lang}
-        settings={settings}
-      />
     </div>
   );
 }

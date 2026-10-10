@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Filter, SlidersHorizontal, Grid, List, Search, RotateCcw } from 'lucide-react';
 import { Product, ProductVariant, FragranceFamily, GenderCategory, Language } from '../../types';
 import { ProductCard } from './ProductCard';
@@ -13,6 +13,8 @@ interface ProductCatalogProps {
   onToggleWishlist: (productId: string) => void;
   initialGenderFilter?: string;
   initialCategoryFilter?: string;
+  // Filter pushed from outside (collection cards, header links); nonce re-applies the same preset
+  preset?: { family?: string; gender?: string; nonce: number };
 }
 
 export const ProductCatalog: React.FC<ProductCatalogProps> = ({
@@ -24,6 +26,7 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   onToggleWishlist,
   initialGenderFilter,
   initialCategoryFilter,
+  preset,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGender, setSelectedGender] = useState<string>(initialGenderFilter || 'All');
@@ -34,13 +37,25 @@ export const ProductCatalog: React.FC<ProductCatalogProps> = ({
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'newest'>('featured');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  useEffect(() => {
+    if (!preset) return;
+    setSearchQuery('');
+    setSelectedBrand('All');
+    setSelectedSize('All');
+    setSelectedFamily(preset.family && preset.family !== 'All' ? preset.family : 'All');
+    setSelectedGender(preset.gender ?? 'All');
+  }, [preset?.nonce]);
+
   // Extract unique brands
   const brands = useMemo(() => {
     return Array.from(new Set(products.map((p) => p.brand)));
   }, [products]);
 
   // Extract unique families
-  const families: FragranceFamily[] = ['Oriental', 'Woody', 'Floral', 'Citrus'];
+  const families = useMemo(
+    () => Array.from(new Set<FragranceFamily>(products.map((p) => p.fragranceFamily))).sort(),
+    [products]
+  );
 
   // Filter products
   const filteredProducts = useMemo(() => {

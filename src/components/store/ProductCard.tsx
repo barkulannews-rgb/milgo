@@ -55,7 +55,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     <div onClick={() => onQuickView(product)} className="group flex flex-col cursor-pointer">
       <div className="relative aspect-[4/5] bg-surface-3 overflow-hidden">
         <img
-          src={product.images[0] || '/src/assets/images/hero_luxury_perfume_1791620587322.jpg'}
+          src={product.images[0] || '/images/hero_luxury_perfume_1791620587322.jpg'}
           alt={displayName}
           className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-700 ease-out"
           referrerPolicy="no-referrer"

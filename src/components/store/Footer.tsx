@@ -1,6 +1,7 @@
 import React from 'react';
 import { Language, StoreSettings } from '../../types';
 import { getTranslation } from '../../lib/translations';
+import { Logo } from '../brand/Logo';
 
 interface FooterProps {
   settings: StoreSettings;
@@ -24,7 +25,9 @@ export const Footer: React.FC<FooterProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div className="col-span-2 md:col-span-1">
-            <h3 className="font-serif text-2xl text-fg mb-3">{settings.storeName}</h3>
+            <div className="mb-5">
+              <Logo name={settings.storeName} />
+            </div>
             <p className="leading-relaxed">{lang === 'so' ? settings.taglineSo : settings.taglineEn}</p>
           </div>
 

@@ -3,6 +3,7 @@ import { ArrowLeft, Eye, EyeOff, Sun, Moon } from 'lucide-react';
 import { Language, StaffUser, StoreSettings } from '../../types';
 import { storeRepo } from '../../lib/storage';
 import { getTranslation } from '../../lib/translations';
+import { Logo } from '../brand/Logo';
 
 interface AdminLoginProps {
   settings: StoreSettings;
@@ -23,8 +24,8 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
   onLoginSuccess,
   onBackToStore,
 }) => {
-  const [identifier, setIdentifier] = useState('owner@milgoparfums.so');
-  const [password, setPassword] = useState('admin');
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +91,9 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
       <main className="flex-1 flex items-center justify-center px-4 pb-16">
         <div className="w-full max-w-sm">
           <div className="text-center mb-10">
-            <h1 className="font-serif text-4xl text-fg">{settings.storeName}</h1>
+            <h1 className="flex justify-center">
+              <Logo name={settings.storeName} size="lg" />
+            </h1>
             <p className="text-sm text-fg-3 mt-2">{getTranslation(lang, 'staffLoginSub')}</p>
           </div>
 
@@ -105,7 +108,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
                 autoComplete="username"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="owner@milgoparfums.so"
+                placeholder="owner@dkperfume.com"
                 className={inputClass}
               />
             </div>

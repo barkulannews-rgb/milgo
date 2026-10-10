@@ -25,6 +25,7 @@ import { StaffUser, StaffRole, Language, StoreSettings } from '../../types';
 import { storeRepo } from '../../lib/storage';
 import { getTranslation } from '../../lib/translations';
 import { roleLabel } from '../../lib/permissions';
+import { Logo } from '../brand/Logo';
 
 export type AdminTab =
   | 'dashboard'
@@ -93,7 +94,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
     <div className="min-h-screen bg-canvas text-fg flex flex-col md:flex-row">
       <aside className="w-full md:w-60 bg-canvas border-r border-line flex flex-col shrink-0">
         <div className="px-6 h-16 flex items-center border-b border-line">
-          <span className="font-serif text-xl text-fg">{settings.storeName}</span>
+          <Logo name={settings.storeName} size="sm" />
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">

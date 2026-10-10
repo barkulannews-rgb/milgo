@@ -326,7 +326,29 @@ export interface HeroSlide {
   active: boolean;
 }
 
+// One card in the homepage "Collections" section; clicking it filters the catalogue to its scent family
+export interface CollectionCard {
+  id: string;
+  titleEn: string;
+  titleSo: string;
+  descEn: string;
+  descSo: string;
+  image: string; // URL, product photo path, or compressed upload
+  family: FragranceFamily | 'All';
+  active: boolean;
+}
+
+export interface CollectionsSection {
+  active: boolean;
+  titleEn: string;
+  titleSo: string;
+  subtitleEn: string;
+  subtitleSo: string;
+  cards: CollectionCard[];
+}
+
 export interface StoreSettings {
+  dataVersion?: number; // Bumped by one-time data migrations (2 = DK Perfume rebrand)
   storeName: string;
   taglineEn: string;
   taglineSo: string;
@@ -345,5 +367,6 @@ export interface StoreSettings {
   payments?: PaymentSettings;
   markets?: MarketSettings;
   heroSlides?: HeroSlide[];
+  collections?: CollectionsSection;
   rolePermissions?: Partial<Record<Exclude<StaffRole, 'owner'>, Permission[]>>; // Set by the owner; defaults apply when missing
 }

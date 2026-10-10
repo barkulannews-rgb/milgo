@@ -41,14 +41,14 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
       id: `prod-${Date.now()}`,
       name: '',
       nameSo: '',
-      brand: 'Milgo Signature',
+      brand: 'DK Signature',
       category: 'Luxury Oud',
       fragranceFamily: 'Oriental',
       concentration: 'Eau de Parfum',
       gender: 'Unisex',
       description: '',
       descriptionSo: '',
-      images: ['/src/assets/images/hero_luxury_perfume_1791620587322.jpg'],
+      images: ['/images/hero_luxury_perfume_1791620587322.jpg'],
       notes: {
         top: ['Bergamot', 'Saffron'],
         heart: ['Rose', 'Amber'],
@@ -202,7 +202,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <img
-                          src={prod.images[0] || '/src/assets/images/hero_luxury_perfume_1791620587322.jpg'}
+                          src={prod.images[0] || '/images/hero_luxury_perfume_1791620587322.jpg'}
                           alt={prod.name}
                           className="w-10 h-10 object-cover bg-surface-2 shrink-0 border border-line"
                         />

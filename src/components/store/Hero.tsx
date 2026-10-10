@@ -49,7 +49,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
 
   return (
     <div
-      className="relative min-h-[620px] lg:min-h-[min(calc(100vh-120px),860px)] flex items-center overflow-hidden bg-[#0b0a09]"
+      className="relative min-h-[620px] lg:min-h-[min(calc(100vh-120px),860px)] flex items-center overflow-hidden bg-canvas"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -59,7 +59,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
           <img
             key={slide.id}
             src={slide.image}
-            alt={slide.tagTitle || 'Milgo Parfums'}
+            alt={slide.tagTitle || 'DK Perfume'}
             className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-out ${
               i === index % count ? 'opacity-100 animate-hero-zoom' : 'opacity-0'
             }`}
@@ -68,18 +68,18 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
         ))}
       </div>
 
-      {/* Overlays: left fade for legibility, bottom vignette */}
-      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-[#0b0a09] via-[#0b0a09]/85 lg:via-[#0b0a09]/40 to-[#0b0a09]/50 lg:to-transparent" />
-      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-t from-[#0b0a09] via-transparent to-[#0b0a09]/40" />
+      {/* Overlays fade the photo into the page colour (cream in light mode, black in dark) */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-r from-canvas via-canvas/85 lg:via-canvas/30 to-canvas/40 lg:to-transparent" />
+      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-t from-canvas via-transparent to-canvas/20" />
 
       {/* Content: keyed by slide so the entrance animation replays on each change */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24 w-full">
         <div key={current.id} className="max-w-xl animate-hero-rise">
-          <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl text-white leading-[1.05] mb-5 text-balance">
+          <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl text-fg leading-[1.05] mb-5 text-balance">
             {headline}
           </h1>
 
-          <p className="text-base sm:text-lg text-white/70 font-light leading-relaxed mb-10 max-w-md line-clamp-3">
+          <p className="text-base sm:text-lg text-fg-2 font-light leading-relaxed mb-10 max-w-md line-clamp-3">
             {subheadline}
           </p>
 
@@ -87,7 +87,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={product ? () => onViewProduct(product) : onExplore}
-              className="group px-8 py-3.5 bg-white hover:bg-[#f1ece4] text-[#14110d] text-xs uppercase tracking-[0.16em] transition-colors flex items-center gap-2 cursor-pointer"
+              className="group px-8 py-3.5 bg-inverse hover:bg-inverse-hover text-on-inverse text-xs uppercase tracking-[0.16em] transition-colors flex items-center gap-2 cursor-pointer"
             >
               <span>
                 {product ? (lang === 'so' ? 'Eeg Cadarka' : 'Shop the Scent') : getTranslation(lang, 'exploreCollection')}
@@ -96,7 +96,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
             </button>
             <button
               onClick={product ? onExplore : onBestsellers}
-              className="px-8 py-3.5 text-white border border-white/40 hover:border-white hover:bg-white/10 text-xs uppercase tracking-[0.16em] transition-colors cursor-pointer"
+              className="px-8 py-3.5 text-fg border border-fg/40 hover:border-fg hover:bg-fg/5 text-xs uppercase tracking-[0.16em] transition-colors cursor-pointer"
             >
               {product ? getTranslation(lang, 'exploreCollection') : getTranslation(lang, 'viewBestsellers')}
             </button>
@@ -108,12 +108,12 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
       {(current.tagLabel || current.tagTitle) && (
         <div key={`tag-${current.id}`} className="hidden lg:block absolute bottom-10 right-10 z-10 text-right animate-hero-rise">
           {current.tagLabel && (
-            <span className="text-[10px] uppercase tracking-[0.3em] text-[#d9bb8a] font-bold block mb-1">
+            <span className="text-[10px] uppercase tracking-[0.3em] text-gold font-bold block mb-1">
               {current.tagLabel}
             </span>
           )}
-          {current.tagTitle && <span className="font-serif text-2xl text-white">{current.tagTitle}</span>}
-          <span className="block h-px w-full mt-2 bg-gradient-to-l from-[#d9bb8a] to-transparent" />
+          {current.tagTitle && <span className="font-serif text-2xl text-fg">{current.tagTitle}</span>}
+          <span className="block h-px w-full mt-2 bg-gradient-to-l from-gold to-transparent" />
         </div>
       )}
 
@@ -123,14 +123,14 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
           <button
             onClick={() => go(-1)}
             aria-label="Previous slide"
-            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 items-center justify-center rounded-full bg-white/5 hover:bg-white/15 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all cursor-pointer"
+            className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 items-center justify-center rounded-full bg-surface/60 hover:bg-surface backdrop-blur-md border border-line text-fg-2 hover:text-fg transition-all cursor-pointer"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => go(1)}
             aria-label="Next slide"
-            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 items-center justify-center rounded-full bg-white/5 hover:bg-white/15 backdrop-blur-md border border-white/15 text-white/80 hover:text-white transition-all cursor-pointer"
+            className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-11 h-11 items-center justify-center rounded-full bg-surface/60 hover:bg-surface backdrop-blur-md border border-line text-fg-2 hover:text-fg transition-all cursor-pointer"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -141,7 +141,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
                 onClick={() => setIndex(i)}
                 aria-label={`Slide ${i + 1}`}
                 className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${
-                  i === index % count ? 'w-8 bg-[#d9bb8a]' : 'w-1.5 bg-white/40 hover:bg-white/70'
+                  i === index % count ? 'w-8 bg-gold' : 'w-1.5 bg-fg/30 hover:bg-fg/60'
                 }`}
               />
             ))}
@@ -153,7 +153,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, slides, products, onExplore, o
       <button
         onClick={onExplore}
         aria-label="Scroll to collection"
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 text-white/50 hover:text-white transition-colors cursor-pointer animate-bounce"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 text-fg-3 hover:text-fg transition-colors cursor-pointer animate-bounce"
       >
         <ChevronDown className="w-6 h-6" />
       </button>

@@ -3,7 +3,7 @@ import { Language } from '../types';
 export const translations = {
   en: {
     // Brand & Header
-    storeName: 'Milgo Parfums',
+    storeName: 'DK Perfume',
     tagline: 'Haute Parfumerie',
     home: 'Home',
     catalog: 'Fragrances',
@@ -106,7 +106,7 @@ export const translations = {
     orderNumber: 'Order Number',
     orderReceivedMessage: 'Thank you. We are preparing your order.',
     trackYourOrder: 'Track Your Order',
-    enterOrderNumber: 'Order number (e.g. MLG-2026-1042)',
+    enterOrderNumber: 'Order number (e.g. DK-2026-1042)',
     enterPhoneNumber: 'Phone number',
     checkStatus: 'Track',
     printInvoice: 'Print Receipt',
@@ -199,7 +199,7 @@ export const translations = {
 
   so: {
     // Brand & Header
-    storeName: 'Milgo Parfums',
+    storeName: 'DK Perfume',
     tagline: 'Cadar Qaali ah',
     home: 'Hoyga',
     catalog: 'Cadarrada',
@@ -302,7 +302,7 @@ export const translations = {
     orderNumber: 'Lambarka Dalabka',
     orderReceivedMessage: 'Mahadsanid. Dalabkaaga waan diyaarinaynaa.',
     trackYourOrder: 'Raadi Dalabkaaga',
-    enterOrderNumber: 'Lambarka dalabka (tus. MLG-2026-1042)',
+    enterOrderNumber: 'Lambarka dalabka (tus. DK-2026-1042)',
     enterPhoneNumber: 'Lambarka taleefanka',
     checkStatus: 'Raadi',
     printInvoice: 'Daabac Rasiidka',

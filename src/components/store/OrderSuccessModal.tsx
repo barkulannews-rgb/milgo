@@ -24,7 +24,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({
   if (!isOpen || !order) return null;
 
   const whatsappConfirmUrl = `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-    `Hello Milgo Parfums, I have placed Order #${order.id} for ${formatMoney(order.grandTotal)} to ${order.city} (${order.deliveryArea}). My phone is ${order.customerPhone}.`
+    `Hello ${settings.storeName}, I have placed Order #${order.id} for ${formatMoney(order.grandTotal)} to ${order.city} (${order.deliveryArea}). My phone is ${order.customerPhone}.`
   )}`;
 
   return (

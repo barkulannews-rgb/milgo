@@ -2,6 +2,7 @@ import React from 'react';
 import { ShoppingBag, Heart, Search, Sun, Moon } from 'lucide-react';
 import { Language, StoreSettings } from '../../types';
 import { getTranslation } from '../../lib/translations';
+import { Logo } from '../brand/Logo';
 
 interface HeaderProps {
   settings: StoreSettings;
@@ -45,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-md border-b border-line">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between gap-8">
         <button onClick={() => onNavigateSection('home')} className="cursor-pointer shrink-0">
-          <span className="font-serif text-2xl sm:text-[28px] text-fg tracking-wide whitespace-nowrap">{settings.storeName}</span>
+          <Logo name={settings.storeName} />
         </button>
 
         <nav className="hidden lg:flex items-center gap-8 text-[13px] uppercase tracking-[0.14em] text-fg-2">

@@ -93,7 +93,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
                 required
                 value={orderIdInput}
                 onChange={(e) => setOrderIdInput(e.target.value)}
-                placeholder="e.g. MLG-2026-1041"
+                placeholder="e.g. DK-2026-1041"
                 className="w-full bg-surface-2 border border-line-strong focus:border-gold rounded p-2.5 text-xs text-fg font-mono outline-none uppercase transition-colors"
               />
             </div>

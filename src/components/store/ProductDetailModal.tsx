@@ -57,7 +57,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
   // WhatsApp order link generator
   const whatsappUrl = `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-    `Hello Milgo Parfums, I would like to order: ${product.name} (${selectedVariant.size}) for ${formatMoney(currentPrice)}. Is it available?`
+    `Hello ${settings.storeName}, I would like to order: ${product.name} (${selectedVariant.size}) for ${formatMoney(currentPrice)}. Is it available?`
   )}`;
 
   return (

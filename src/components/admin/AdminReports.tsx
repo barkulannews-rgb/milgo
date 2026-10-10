@@ -20,7 +20,7 @@ export const AdminReports: React.FC<AdminReportsProps> = ({ lang }) => {
   const handleExportCsv = () => {
     let headers: string[] = [];
     let rows: (string | number)[][] = [];
-    let filename = `milgo_report_${reportType}_${new Date().toISOString().slice(0, 10)}.csv`;
+    let filename = `dkperfume_report_${reportType}_${new Date().toISOString().slice(0, 10)}.csv`;
 
     if (reportType === 'sales') {
       headers = ['Order ID', 'Date', 'Customer', 'Phone', 'City', 'Payment Method', 'Payment Status', 'Order Status', 'Items Count', 'Grand Total (£)'];

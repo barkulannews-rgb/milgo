@@ -1,12 +1,12 @@
 import React from 'react';
-import { X } from 'lucide-react';
-import { Language, StoreSettings } from '../../types';
+import { ArrowLeft } from 'lucide-react';
+import { Language } from '../../types';
+import type { PolicyKey } from '../../lib/router';
 
-interface PolicyModalsProps {
-  activePolicy: 'about' | 'authenticity' | 'shipping' | 'returns' | null;
-  onClose: () => void;
+interface PolicyPageProps {
+  page: PolicyKey;
   lang: Language;
-  settings: StoreSettings;
+  onBack: () => void;
 }
 
 const CONTENT = {
@@ -14,12 +14,12 @@ const CONTENT = {
     titleEn: 'About Us',
     titleSo: 'Nagu Saabsan',
     en: [
-      'Milgo Parfums is a fragrance house headquartered in London.',
+      'DK Perfume is a fragrance house headquartered in London.',
       'From Somali frankincense to French florals and rare oud.',
       'We ship worldwide, with local delivery in the UK and Somalia.',
     ],
     so: [
-      'Milgo Parfums waa shirkad cadar oo xaruntu tahay London.',
+      'DK Perfume waa shirkad cadar oo xaruntu tahay London.',
       'Laga bilaabo luubaanka Soomaaliyeed ilaa ubaxa Faransiiska iyo cuudka dhifka ah.',
       'Adduunka oo dhan ayaan u dirnaa, gaarsiin gudaha ah UK iyo Soomaaliya.',
     ],
@@ -70,30 +70,38 @@ const CONTENT = {
   },
 };
 
-export const PolicyModals: React.FC<PolicyModalsProps> = ({ activePolicy, onClose, lang }) => {
-  if (!activePolicy) return null;
-  const item = CONTENT[activePolicy];
+// Help pages (About, Authenticity, Shipping, Returns) rendered as full pages with their own address
+export const PolicyPage: React.FC<PolicyPageProps> = ({ page, lang, onBack }) => {
+  const item = CONTENT[page];
   const so = lang === 'so';
+  const others = (Object.keys(CONTENT) as PolicyKey[]).filter((k) => k !== page);
 
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fadeIn"
-      onClick={onClose}
-    >
-      <div className="relative w-full max-w-md bg-surface shadow-2xl text-fg p-8 sm:p-10" onClick={(e) => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4 p-2 text-fg-3 hover:text-fg transition-colors cursor-pointer" aria-label="Close">
-          <X className="w-5 h-5" strokeWidth={1.5} />
+    <main className="flex-1 bg-canvas">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-20 sm:py-28">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-xs uppercase tracking-[0.14em] text-fg-3 hover:text-fg transition-colors cursor-pointer mb-10"
+        >
+          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+          {so ? 'Dib u noqo' : 'Back'}
         </button>
-
-        <h2 className="font-serif text-3xl mb-6">{so ? item.titleSo : item.titleEn}</h2>
-        <ul className="space-y-3 text-sm text-fg-2 leading-relaxed">
+        <h1 className="font-serif text-5xl text-fg mb-10">{so ? item.titleSo : item.titleEn}</h1>
+        <ul className="space-y-5 text-base text-fg-2 leading-relaxed">
           {(so ? item.so : item.en).map((line) => (
-            <li key={line} className="pl-4 relative before:absolute before:left-0 before:top-[0.7em] before:w-1.5 before:h-px before:bg-gold">
+            <li key={line} className="pl-6 relative before:absolute before:left-0 before:top-[0.8em] before:w-3 before:h-px before:bg-gold">
               {line}
             </li>
           ))}
         </ul>
+        <div className="mt-16 pt-8 border-t border-line flex flex-wrap gap-x-8 gap-y-3 text-sm">
+          {others.map((k) => (
+            <a key={k} href={`#/${k}`} className="text-fg-3 hover:text-fg underline underline-offset-4 transition-colors">
+              {so ? CONTENT[k].titleSo : CONTENT[k].titleEn}
+            </a>
+          ))}
+        </div>
       </div>
-    </div>
+    </main>
   );
 };

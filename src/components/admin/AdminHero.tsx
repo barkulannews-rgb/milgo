@@ -18,37 +18,11 @@ import { HeroSlide, Language, Product, StoreSettings } from '../../types';
 import { storeRepo, DEFAULT_HERO_SLIDES } from '../../lib/storage';
 import { getTranslation } from '../../lib/translations';
 import { resolveHeroSlide } from '../../lib/heroSlides';
+import { compressImage } from '../../lib/images';
 
 interface AdminHeroProps {
   lang: Language;
   onSettingsUpdated: (newSettings: StoreSettings) => void;
-}
-
-const MAX_IMAGE_WIDTH = 1920;
-const JPEG_QUALITY = 0.82;
-
-// Downscale and re-encode an uploaded photo so it fits comfortably in browser storage.
-function compressImage(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('Could not read the file.'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('This file is not a valid image.'));
-      img.onload = () => {
-        const scale = Math.min(1, MAX_IMAGE_WIDTH / img.width);
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Image processing is not supported in this browser.'));
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
-      };
-      img.src = reader.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
 }
 
 const newSlide = (): HeroSlide => ({
@@ -192,7 +166,7 @@ export const AdminHero: React.FC<AdminHeroProps> = ({ lang, onSettingsUpdated })
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-line">
         <div>
           <h1 className="font-serif text-3xl text-fg">
-            {so ? 'Bogga Hore' : 'Homepage'}
+            {so ? 'Sawirka weyn' : 'Banner'}
           </h1>
           
         </div>
@@ -337,7 +311,7 @@ export const AdminHero: React.FC<AdminHeroProps> = ({ lang, onSettingsUpdated })
         {selected && (
           <div className="lg:col-span-8 p-6 bg-surface border border-line space-y-5 text-xs">
             {/* Live preview */}
-            <div className="relative aspect-[21/9] overflow-hidden bg-[#0b0a09]">
+            <div className="relative aspect-[21/9] overflow-hidden bg-canvas border border-line">
               {resolved?.image ? (
                 <img
                   src={resolved.image}
@@ -355,16 +329,16 @@ export const AdminHero: React.FC<AdminHeroProps> = ({ lang, onSettingsUpdated })
                   </span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0b0a09] via-[#0b0a09]/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-canvas via-canvas/40 to-transparent" />
               <div className="absolute inset-0 p-5 sm:p-7 flex flex-col justify-center max-w-[55%]">
-                <span className="font-serif text-white text-lg sm:text-2xl leading-tight line-clamp-3">
+                <span className="font-serif text-fg text-lg sm:text-2xl leading-tight line-clamp-3">
                   {resolved?.headline || (so ? selected.headlineSo : selected.headlineEn) || getTranslation(lang, 'heroHeadline')}
                 </span>
               </div>
               {resolved && (resolved.tagLabel || resolved.tagTitle) && (
                 <div className="absolute bottom-3 right-4 text-right">
-                  <span className="block text-[8px] uppercase tracking-[0.25em] text-[#d9bb8a] font-bold">{resolved.tagLabel}</span>
-                  <span className="font-serif text-sm text-white">{resolved.tagTitle}</span>
+                  <span className="block text-[8px] uppercase tracking-[0.25em] text-gold font-bold">{resolved.tagLabel}</span>
+                  <span className="font-serif text-sm text-fg">{resolved.tagTitle}</span>
                 </div>
               )}
               <span className="absolute top-3 left-3 text-[10px] uppercase tracking-wider bg-black/50 text-white/80 px-2 py-1">

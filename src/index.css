@@ -46,6 +46,7 @@
   --color-inverse: #161513;
   --color-inverse-hover: #2c2925;
   --color-on-inverse: #ffffff;
+  --color-chart: #a87a24; /* Data-mark gold, validated for chroma and 3:1 contrast on the light surface */
 }
 
 /* Night mode: dark token values, and status colours flipped (50 <-> 950) so tinted chips stay readable */
@@ -67,6 +68,7 @@
   --color-inverse: #f5f2ea;
   --color-inverse-hover: #ffffff;
   --color-on-inverse: #161513;
+  --color-chart: #b88630;
   --color-gray-50: oklch(13% 0.028 261.692);
   --color-gray-100: oklch(21% 0.034 264.665);
   --color-gray-200: oklch(27.8% 0.033 256.848);
@@ -165,6 +167,7 @@
   --color-inverse: #161513;
   --color-inverse-hover: #2c2925;
   --color-on-inverse: #ffffff;
+  --color-chart: #a87a24;
   --color-gray-50: oklch(98.5% 0.002 247.839);
   --color-gray-100: oklch(96.7% 0.003 264.542);
   --color-gray-200: oklch(92.8% 0.006 264.531);
