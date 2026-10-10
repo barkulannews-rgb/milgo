@@ -1,0 +1,42 @@
+# Builds the site on every push to main and publishes the ready-to-serve files (dist/)
+# to the "hostinger" branch. Hostinger's Git deployment pulls that branch into public_html,
+# because Hostinger only copies files and does not run the build itself.
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-hostinger
+  cancel-in-progress: true
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --legacy-peer-deps: vite 8 is newer than some plugins' declared peer range
+      - run: npm ci --legacy-peer-deps
+
+      - run: npm run lint
+
+      - run: npm run build
+
+      - name: Publish dist/ to the hostinger branch
+        uses: JamesIves/github-pages-deploy-action@v4.7.3
+        with:
+          branch: hostinger
+          folder: dist
+          clean: true
+          commit-message: 'Deploy ${{ github.sha }}'
