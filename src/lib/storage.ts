@@ -1859,6 +1859,19 @@ class StoreRepository {
     return { success: true };
   }
 
+  // --- Footer: contact details and help pages ---
+  saveFooter(patch: Pick<StoreSettings, 'address' | 'email' | 'whatsappNumber' | 'helpPages'>): { success: boolean; error?: string } {
+    if (!this.requirePermission('hero', 'save footer')) return { success: false, error: 'Not allowed for your role.' };
+    const previous = this.settings;
+    this.settings = { ...this.settings, ...patch };
+    if (!saveToStorage('settings', this.settings)) {
+      this.settings = previous;
+      return { success: false, error: 'Could not save. Try again.' };
+    }
+    this.logAction('Footer Updated', 'Settings', 'footer', 'Updated footer contact details and help pages');
+    return { success: true };
+  }
+
   // --- Homepage Hero Slides ---
   getHeroSlides(): HeroSlide[] {
     return [...(this.settings.heroSlides ?? DEFAULT_HERO_SLIDES)];

@@ -33,7 +33,7 @@ const WRITERS = [
 ];
 // Settings fields each permission may change (owners hold 'settings' and may change everything)
 const SETTINGS_FIELDS = [
-    'hero' => ['heroSlides', 'collections'],
+    'hero' => ['heroSlides', 'collections', 'helpPages', 'address', 'email', 'whatsappNumber'],
     'payments' => ['payments', 'markets'],
     'users' => ['rolePermissions'],
 ];

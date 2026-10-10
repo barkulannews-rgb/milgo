@@ -1,12 +1,13 @@
 import React from 'react';
-import { Language, StoreSettings } from '../../types';
+import { HelpPageKey, Language, StoreSettings } from '../../types';
+import { HELP_KEYS, helpPagesOf, whatsappDisplay } from '../../lib/helpPages';
 import { getTranslation } from '../../lib/translations';
 import { Logo } from '../brand/Logo';
 
 interface FooterProps {
   settings: StoreSettings;
   lang: Language;
-  onOpenPolicy: (policyKey: 'about' | 'authenticity' | 'shipping' | 'returns') => void;
+  onOpenPolicy: (policyKey: HelpPageKey) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
@@ -16,6 +17,7 @@ export const Footer: React.FC<FooterProps> = ({
 }) => {
   const heading = 'text-[11px] uppercase tracking-[0.16em] text-fg mb-4';
   const link = 'hover:text-fg transition-colors cursor-pointer text-left';
+  const pages = helpPagesOf(settings);
   const waLink = `https://wa.me/${settings.whatsappNumber.replace(/[^0-9]/g, '')}`;
 
   return (
@@ -35,7 +37,7 @@ export const Footer: React.FC<FooterProps> = ({
               <li>{settings.address}</li>
               <li>
                 <a href={waLink} target="_blank" rel="noopener noreferrer" className={link}>
-                  WhatsApp {settings.phone}
+                  WhatsApp {whatsappDisplay(settings)}
                 </a>
               </li>
               <li>
@@ -49,10 +51,13 @@ export const Footer: React.FC<FooterProps> = ({
           <div>
             <h4 className={heading}>{getTranslation(lang, 'policies')}</h4>
             <ul className="space-y-2">
-              <li><button onClick={() => onOpenPolicy('about')} className={link}>{getTranslation(lang, 'aboutUs')}</button></li>
-              <li><button onClick={() => onOpenPolicy('authenticity')} className={link}>{getTranslation(lang, 'authenticity')}</button></li>
-              <li><button onClick={() => onOpenPolicy('shipping')} className={link}>{getTranslation(lang, 'shippingPolicy')}</button></li>
-              <li><button onClick={() => onOpenPolicy('returns')} className={link}>{getTranslation(lang, 'returnsPolicy')}</button></li>
+              {HELP_KEYS.map((k) => (
+                <li key={k}>
+                  <button onClick={() => onOpenPolicy(k)} className={link}>
+                    {lang === 'so' ? pages[k].titleSo || pages[k].titleEn : pages[k].titleEn}
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
 

@@ -5,8 +5,11 @@ import { useCallback, useEffect, useState } from 'react';
 // index.html for any path that is not a real file (see public/.htaccess and Vite's dev fallback).
 // Old hash links (/#/shop/men) from before the switch are converted on load.
 
-export type PolicyKey = 'about' | 'authenticity' | 'shipping' | 'returns';
-const POLICIES: PolicyKey[] = ['about', 'authenticity', 'shipping', 'returns'];
+import type { HelpPageKey } from '../types';
+import { HELP_KEYS } from './helpPages';
+
+export type PolicyKey = HelpPageKey;
+const POLICIES = HELP_KEYS;
 
 export type Route =
   | { name: 'home' }

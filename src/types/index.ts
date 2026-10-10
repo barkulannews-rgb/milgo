@@ -347,6 +347,16 @@ export interface CollectionsSection {
   cards: CollectionCard[];
 }
 
+export type HelpPageKey = 'about' | 'authenticity' | 'shipping' | 'returns';
+
+// A help page linked from the footer: title plus one line per point, in both languages
+export interface HelpPage {
+  titleEn: string;
+  titleSo: string;
+  en: string[];
+  so: string[];
+}
+
 export interface StoreSettings {
   dataVersion?: number; // Bumped by one-time data migrations (2 = DK Perfume rebrand)
   storeName: string;
@@ -368,5 +378,6 @@ export interface StoreSettings {
   markets?: MarketSettings;
   heroSlides?: HeroSlide[];
   collections?: CollectionsSection;
+  helpPages?: Partial<Record<HelpPageKey, HelpPage>>; // Footer help pages; defaults apply when missing
   rolePermissions?: Partial<Record<Exclude<StaffRole, 'owner'>, Permission[]>>; // Set by the owner; defaults apply when missing
 }

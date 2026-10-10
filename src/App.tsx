@@ -23,6 +23,7 @@ import { OrderSuccessModal } from './components/store/OrderSuccessModal';
 import { OrderTrackerModal } from './components/store/OrderTrackerModal';
 import { PolicyPage } from './components/store/PolicyPage';
 import { Footer } from './components/store/Footer';
+import { helpPagesOf } from './lib/helpPages';
 
 // Admin ERP & Auth components
 import { AdminLogin } from './components/admin/AdminLogin';
@@ -404,7 +405,7 @@ export default function App() {
       />
 
       {route.name === 'page' ? (
-        <PolicyPage page={route.page} lang={lang} onBack={() => back('/')} onOpenPage={(k) => navigate(`/${k}`)} />
+        <PolicyPage page={route.page} pages={helpPagesOf(settings)} lang={lang} onBack={() => back('/')} onOpenPage={(k) => navigate(`/${k}`)} />
       ) : (
         <>
       {/* 3. Hero Showcase */}

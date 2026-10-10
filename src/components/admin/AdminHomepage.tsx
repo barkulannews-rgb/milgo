@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Language, StoreSettings } from '../../types';
 import { AdminHero } from './AdminHero';
 import { AdminCollections } from './AdminCollections';
+import { AdminFooter } from './AdminFooter';
 
 interface AdminHomepageProps {
   lang: Language;
@@ -11,10 +12,11 @@ interface AdminHomepageProps {
 // Everything shown on the storefront home page, one tab per section
 export const AdminHomepage: React.FC<AdminHomepageProps> = ({ lang, onSettingsUpdated }) => {
   const so = lang === 'so';
-  const [tab, setTab] = useState<'banner' | 'collections'>('banner');
+  const [tab, setTab] = useState<'banner' | 'collections' | 'footer'>('banner');
   const tabs = [
     { id: 'banner' as const, label: so ? 'Sawirka weyn' : 'Banner' },
     { id: 'collections' as const, label: so ? 'Xulalka' : 'Collections' },
+    { id: 'footer' as const, label: 'Footer' },
   ];
 
   return (
@@ -36,8 +38,10 @@ export const AdminHomepage: React.FC<AdminHomepageProps> = ({ lang, onSettingsUp
       </div>
       {tab === 'banner' ? (
         <AdminHero lang={lang} onSettingsUpdated={onSettingsUpdated} />
-      ) : (
+      ) : tab === 'collections' ? (
         <AdminCollections lang={lang} onSettingsUpdated={onSettingsUpdated} />
+      ) : (
+        <AdminFooter lang={lang} onSettingsUpdated={onSettingsUpdated} />
       )}
     </div>
   );
