@@ -15,6 +15,9 @@ return [
 
     'site_url' => 'https://dkperfume.com',
 
+    // Uploaded photos are kept here (created automatically). Default: dk-uploads next to this file.
+    // 'uploads_dir' => '/home/u123456789/domains/dkperfume.com/dk-uploads',
+
     // Stripe (cards, Apple Pay, Google Pay): dashboard.stripe.com -> Developers -> API keys / Webhooks.
     // Leave empty until your Stripe account is ready; card payments stay hidden until then.
     'stripe_secret_key' => '',      // sk_live_... (or sk_test_... for testing)

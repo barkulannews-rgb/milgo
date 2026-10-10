@@ -15,6 +15,7 @@ import { storeRepo } from '../../lib/storage';
 import { getTranslation } from '../../lib/translations';
 
 import { formatMoney } from '../../lib/money';
+import { ProductPhotos } from './ProductPhotos';
 interface AdminProductsProps {
   lang: Language;
 }
@@ -24,6 +25,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
   const [search, setSearch] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const refreshProducts = () => {
     setProducts(storeRepo.getProducts());
@@ -48,7 +50,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
       gender: 'Unisex',
       description: '',
       descriptionSo: '',
-      images: ['/images/hero_luxury_perfume_1791620587322.jpg'],
+      images: [],
       notes: {
         top: ['Bergamot', 'Saffron'],
         heart: ['Rose', 'Amber'],
@@ -104,6 +106,11 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
     if (!editingProduct) return;
     if (!editingProduct.name.trim()) {
       alert('Please enter perfume name.');
+      return;
+    }
+    if (uploading) return;
+    if (!editingProduct.images.length) {
+      alert('Add at least one photo.');
       return;
     }
     storeRepo.saveProduct(editingProduct);
@@ -284,7 +291,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
           <div className="relative w-full max-w-3xl bg-surface border border-line rounded-2xl overflow-hidden shadow-2xl text-fg">
             <div className="p-6 border-b border-line flex items-center justify-between">
               <h2 className="font-serif text-2xl font-medium tracking-wide">
-                {editingProduct.id.startsWith('prod-') && editingProduct.name ? 'Edit Fragrance' : 'New Fragrance Flacon'}
+                {products.some((p) => p.id === editingProduct.id) ? 'Edit Fragrance' : 'New Fragrance'}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -372,12 +379,10 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs text-fg-2 mb-1 font-medium">Image URL</label>
-                  <input
-                    type="text"
-                    value={editingProduct.images[0] || ''}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, images: [e.target.value] })}
-                    className="w-full bg-surface-2 border border-line-strong focus:border-gold p-2.5 text-xs text-fg font-mono outline-none"
+                  <ProductPhotos
+                    images={editingProduct.images}
+                    onChange={(fn) => setEditingProduct((p) => p && { ...p, images: fn(p.images) })}
+                    onBusyChange={setUploading}
                   />
                 </div>
 
@@ -571,7 +576,8 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ lang }) => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-inverse hover:bg-inverse-hover text-on-inverse text-xs font-semibold uppercase tracking-wider cursor-pointer shadow-md"
+                  disabled={uploading}
+                  className="disabled:opacity-40 px-6 py-2.5 bg-inverse hover:bg-inverse-hover text-on-inverse text-xs font-semibold uppercase tracking-wider cursor-pointer shadow-md"
                 >
                   {getTranslation(lang, 'saveChanges')}
                 </button>

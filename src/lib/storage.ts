@@ -24,6 +24,7 @@ import { SOMALIA, ZONE_COUNTRY_DEFAULTS } from './countries';
 import { BASE_CURRENCY, LEGACY_USD_TO_GBP } from './money';
 import { DEFAULT_ROLE_PERMISSIONS, OWNER_ONLY, Permission, DelegatedRole } from './permissions';
 import { api, ApiError, Bootstrap, OrderRequest, TrackedOrder } from './api';
+import { compressImage, resizeImage } from './images';
 
 import { formatMoney } from './money';
 // Initial high-fidelity product images generated
@@ -1053,6 +1054,19 @@ class StoreRepository {
 
   isServerMode(): boolean {
     return this.serverMode;
+  }
+
+  // Save a chosen photo and return the address to store. Online it goes to the Hostinger server
+  // (kept outside public_html); without a server it is kept inline in the browser.
+  async uploadImage(file: File, maxWidth?: number): Promise<string> {
+    if (!file.type.startsWith('image/')) throw new Error('Choose an image file.');
+    if (!this.serverMode) return compressImage(file, maxWidth);
+    const { blob, name } = await resizeImage(file, maxWidth);
+    try {
+      return (await api.upload(blob, name)).url;
+    } catch (err) {
+      throw new Error(err instanceof ApiError ? err.message : 'Upload failed. Try again.');
+    }
   }
 
   getGateways(): { stripe: boolean; paypal: boolean } {

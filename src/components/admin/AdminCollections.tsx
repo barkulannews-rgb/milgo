@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import { ImagePlus, Upload, ArrowUp, ArrowDown, Trash2, Plus, RotateCcw, Save } from 'lucide-react';
 import { CollectionCard, CollectionsSection, FragranceFamily, Language, StoreSettings } from '../../types';
 import { storeRepo, DEFAULT_COLLECTIONS } from '../../lib/storage';
-import { compressImage } from '../../lib/images';
 
 interface AdminCollectionsProps {
   lang: Language;
@@ -91,7 +90,7 @@ export const AdminCollections: React.FC<AdminCollectionsProps> = ({ lang, onSett
     setUploading(true);
     try {
       // Cards are portrait and narrower than the banner, so a smaller image is plenty
-      patchCard(selected.id, { image: await compressImage(file, 1200) });
+      patchCard(selected.id, { image: await storeRepo.uploadImage(file, 1200) });
     } catch (err) {
       setMessage({ ok: false, text: (err as Error).message });
     } finally {

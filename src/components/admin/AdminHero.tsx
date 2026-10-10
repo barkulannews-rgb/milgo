@@ -18,7 +18,6 @@ import { HeroSlide, Language, Product, StoreSettings } from '../../types';
 import { storeRepo, DEFAULT_HERO_SLIDES } from '../../lib/storage';
 import { getTranslation } from '../../lib/translations';
 import { resolveHeroSlide } from '../../lib/heroSlides';
-import { compressImage } from '../../lib/images';
 
 interface AdminHeroProps {
   lang: Language;
@@ -112,7 +111,7 @@ export const AdminHero: React.FC<AdminHeroProps> = ({ lang, onSettingsUpdated })
     }
     setUploading(true);
     try {
-      patchSelected({ image: await compressImage(file) });
+      patchSelected({ image: await storeRepo.uploadImage(file) });
       setMessage(null);
     } catch (err) {
       flash('error', (err as Error).message);

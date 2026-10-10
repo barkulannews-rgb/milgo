@@ -9,6 +9,7 @@ export class ApiError extends Error {
 }
 
 async function call<T>(action: string, opts: { body?: unknown; query?: Record<string, string>; timeoutMs?: number } = {}): Promise<T> {
+  const isForm = opts.body instanceof FormData;
   const query = new URLSearchParams({ a: action, ...(opts.query ?? {}) });
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? 20000);
@@ -17,8 +18,9 @@ async function call<T>(action: string, opts: { body?: unknown; query?: Record<st
       method: opts.body === undefined ? 'GET' : 'POST',
       credentials: 'same-origin',
       // The custom header is required by the API for writes, which blocks cross-site form posts
-      headers: opts.body === undefined ? {} : { 'Content-Type': 'application/json', 'X-DK-Client': '1' },
-      body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+      // (file uploads send FormData, whose content type the browser sets itself)
+      headers: opts.body === undefined ? {} : isForm ? { 'X-DK-Client': '1' } : { 'Content-Type': 'application/json', 'X-DK-Client': '1' },
+      body: opts.body === undefined ? undefined : isForm ? (opts.body as FormData) : JSON.stringify(opts.body),
       signal: ctrl.signal,
     });
     if (!(res.headers.get('content-type') ?? '').includes('application/json')) throw new ApiError(res.status, 'Server not available');
@@ -82,5 +84,10 @@ export const api = {
     call<{ valid: boolean; discount: number; message: string }>('coupon_check', { body: { code, subtotal } }),
   orderCreate: (req: OrderRequest) => call<{ order: Order; redirectUrl: string | null }>('order_create', { body: req }),
   orderUpdate: (id: string, patch: Record<string, unknown>) => call<{ order: Order }>('order_update', { body: { id, ...patch } }),
+  upload: (file: Blob, name: string) => {
+    const form = new FormData();
+    form.append('file', file, name);
+    return call<{ url: string }>('upload', { body: form, timeoutMs: 60000 });
+  },
   track: (id: string, phone: string) => call<{ order: TrackedOrder }>('track', { query: { id, phone } }),
 };

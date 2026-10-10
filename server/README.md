@@ -17,6 +17,12 @@ The site is a static React app plus a small PHP API in `public/api/`, which the 
    sign in at `https://dkperfume.com/admin` (the storefront has no staff link).
    It loads the starting catalogue from `public/api/seed.json` and refuses to run again.
 
+## Photos
+
+Photos uploaded in the admin are saved in `dk-uploads/` next to the config file (outside
+`public_html`, so deploys never delete them) and served at `/api/?a=img&f=...`. Include that folder
+in your backups together with the database.
+
 ## Payments
 
 Add keys to the config file (never to git):
