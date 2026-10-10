@@ -5,6 +5,13 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
+# Clean page addresses (/admin, /shop/men, /track/DK-...) are handled by the app: any path that is
+# not a real file or folder gets index.html. The API keeps its own rules.
+RewriteCond %{REQUEST_URI} !^/api(/|$)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ /index.html [L]
+
 <IfModule mod_headers.c>
   # The page itself is never cached, so visitors get a new release right away
   <FilesMatch "index\.html$">

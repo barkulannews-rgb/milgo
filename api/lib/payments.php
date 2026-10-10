@@ -40,8 +40,8 @@ function stripe_checkout(array $order): string
         'mode' => 'payment',
         'client_reference_id' => $order['id'],
         'metadata[order_id]' => $order['id'],
-        'success_url' => "$site/#/track/{$order['id']}",
-        'cancel_url' => "$site/#/",
+        'success_url' => "$site/track/{$order['id']}",
+        'cancel_url' => "$site/",
         'line_items[0][quantity]' => 1,
         'line_items[0][price_data][currency]' => 'gbp',
         'line_items[0][price_data][unit_amount]' => (int) round($order['grandTotal'] * 100),
@@ -127,7 +127,7 @@ function paypal_checkout(array $order): string
             'user_action' => 'PAY_NOW',
             'shipping_preference' => 'NO_SHIPPING',
             'return_url' => "$site/api/?a=paypal_return&order=" . rawurlencode($order['id']),
-            'cancel_url' => "$site/#/",
+            'cancel_url' => "$site/",
         ],
     ];
     [$status, $res] = http_call('POST', paypal_base() . '/v2/checkout/orders', [
@@ -145,7 +145,7 @@ function paypal_return(): never
     $id = (string) ($_GET['order'] ?? '');
     $token = (string) ($_GET['token'] ?? '');
     $site = site_url();
-    if ($id === '' || $token === '') { header("Location: $site/#/"); exit; }
+    if ($id === '' || $token === '') { header("Location: $site/"); exit; }
     [$status, $res] = http_call('POST', paypal_base() . '/v2/checkout/orders/' . rawurlencode($token) . '/capture', [
         'Authorization: Bearer ' . paypal_token(),
         'Content-Type: application/json',
@@ -164,6 +164,6 @@ function paypal_return(): never
             audit('Payment Received', 'Order', $id, sprintf('PayPal payment £%.2f', $o['grandTotal']));
         });
     }
-    header("Location: $site/#/track/" . rawurlencode($id));
+    header("Location: $site/track/" . rawurlencode($id));
     exit;
 }
