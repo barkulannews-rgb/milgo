@@ -1,0 +1,6 @@
+{
+  "name": "Milgo Parfums - Luxury Fragrances & ERP",
+  "description": "Premier luxury perfume retail store and business management ERP in Somalia with bilingual Somali and English support.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
