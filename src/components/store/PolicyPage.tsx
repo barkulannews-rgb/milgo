@@ -7,6 +7,7 @@ interface PolicyPageProps {
   page: PolicyKey;
   lang: Language;
   onBack: () => void;
+  onOpenPage: (page: PolicyKey) => void;
 }
 
 const CONTENT = {
@@ -71,7 +72,7 @@ const CONTENT = {
 };
 
 // Help pages (About, Authenticity, Shipping, Returns) rendered as full pages with their own address
-export const PolicyPage: React.FC<PolicyPageProps> = ({ page, lang, onBack }) => {
+export const PolicyPage: React.FC<PolicyPageProps> = ({ page, lang, onBack, onOpenPage }) => {
   const item = CONTENT[page];
   const so = lang === 'so';
   const others = (Object.keys(CONTENT) as PolicyKey[]).filter((k) => k !== page);
@@ -96,7 +97,14 @@ export const PolicyPage: React.FC<PolicyPageProps> = ({ page, lang, onBack }) =>
         </ul>
         <div className="mt-16 pt-8 border-t border-line flex flex-wrap gap-x-8 gap-y-3 text-sm">
           {others.map((k) => (
-            <a key={k} href={`#/${k}`} className="text-fg-3 hover:text-fg underline underline-offset-4 transition-colors">
+            <a
+              key={k}
+              href={`/${k}`}
+              onClick={(e) => {
+                e.preventDefault();
+                onOpenPage(k);
+              }}
+              className="text-fg-3 hover:text-fg underline underline-offset-4 transition-colors">
               {so ? CONTENT[k].titleSo : CONTENT[k].titleEn}
             </a>
           ))}

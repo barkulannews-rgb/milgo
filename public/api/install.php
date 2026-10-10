@@ -55,7 +55,7 @@ try {
                     ->execute(['usr-' . bin2hex(random_bytes(6)), $name, $email, '', 'owner', password_hash($pass, PASSWORD_DEFAULT), now_iso()]);
             });
             $done = true;
-            $message = 'Installed. Sign in at /#/staff-login with the email and password you just set.';
+            $message = 'Installed. Sign in at /admin with the email and password you just set.';
         }
     }
 } catch (Throwable $e) {

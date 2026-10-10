@@ -7,14 +7,12 @@ interface FooterProps {
   settings: StoreSettings;
   lang: Language;
   onOpenPolicy: (policyKey: 'about' | 'authenticity' | 'shipping' | 'returns') => void;
-  onOpenAdmin: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
   settings,
   lang,
   onOpenPolicy,
-  onOpenAdmin,
 }) => {
   const heading = 'text-[11px] uppercase tracking-[0.16em] text-fg mb-4';
   const link = 'hover:text-fg transition-colors cursor-pointer text-left';
@@ -63,11 +61,6 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2">
               <li>{lang === 'so' ? 'Dirid caalami ah' : 'Worldwide shipping'}</li>
               <li>{lang === 'so' ? 'Cadar 100% asal ah' : '100% authentic'}</li>
-              <li>
-                <button onClick={onOpenAdmin} className={link}>
-                  {getTranslation(lang, 'staffPortal')}
-                </button>
-              </li>
             </ul>
           </div>
         </div>

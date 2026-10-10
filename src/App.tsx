@@ -140,9 +140,9 @@ export default function App() {
     });
   }, [route.name === 'admin' ? route.tab : '']);
 
-  // Redirects: signed-in staff skip the login form; an empty bag has no checkout
+  // Redirects: the old /staff-login address becomes /admin; an empty bag has no checkout
   useEffect(() => {
-    if (route.name === 'login' && authenticatedStaff) navigate(route.next ?? '/admin/dashboard', { replace: true });
+    if (route.name === 'admin' && !window.location.pathname.startsWith('/admin')) navigate('/admin', { replace: true });
     if (route.name === 'checkout' && cart.length === 0) navigate('/', { replace: true, scroll: 'none' });
   }, [route, authenticatedStaff, cart.length]);
 
@@ -267,7 +267,7 @@ export default function App() {
     setProducts(storeRepo.getProducts());
   };
 
-  // Catalogue filter follows the address (#/shop/men, #/shop/family/Citrus); navKey re-applies it on Back/Forward
+  // Catalogue filter follows the address (/shop/men, /shop/family/Citrus); navKey re-applies it on Back/Forward
   const catalogPreset =
     route.name === 'shop' ? { family: route.family, gender: route.gender, nonce: navKey } : undefined;
 
@@ -281,36 +281,14 @@ export default function App() {
 
   const handleOpenTracker = (orderId?: string) => navigate(orderId ? `/track/${orderId}` : '/track', { scroll: 'none' });
 
-  const handleOpenAdminPortal = () => navigate(authenticatedStaff ? '/admin/dashboard' : '/staff-login');
-
-  const handleLoginSuccess = (user: StaffUser) => {
-    setAuthenticatedStaff(user);
-    navigate(route.name === 'login' && route.next ? route.next : '/admin/dashboard', { replace: true });
-  };
+  // Signing in keeps the address (/admin or /admin/orders), so the requested page opens straight away
+  const handleLoginSuccess = (user: StaffUser) => setAuthenticatedStaff(user);
 
   const handleLogout = () => {
     storeRepo.logoutStaff();
     setAuthenticatedStaff(null);
     navigate('/');
   };
-
-  // Render Admin Authentication Portal Gate
-  if (route.name === 'login' && authenticatedStaff) return null; // redirected by the effect above
-  if (route.name === 'login') {
-    return (
-      <>
-        <AdminLogin
-          settings={settings}
-          lang={lang}
-          onLanguageChange={handleLanguageChange}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          onLoginSuccess={handleLoginSuccess}
-          onBackToStore={() => back('/')}
-        />
-      </>
-    );
-  }
 
   // Render Admin ERP view (Strictly protected by authentication)
   if (route.name === 'admin') {
@@ -412,8 +390,6 @@ export default function App() {
         onLanguageChange={handleLanguageChange}
         theme={theme}
         onToggleTheme={handleToggleTheme}
-        isAuthenticated={Boolean(authenticatedStaff)}
-        authenticatedStaffName={authenticatedStaff?.name}
         cartCount={totalCartCount}
         wishlistCount={wishlist.length}
         onOpenCart={() => setIsCartOpen(true)}
@@ -424,12 +400,11 @@ export default function App() {
           handleNavigateSection('catalog');
         }}
         onNavigateSection={handleNavigateSection}
-        onOpenAdmin={handleOpenAdminPortal}
         onOpenTrackOrder={() => handleOpenTracker()}
       />
 
       {route.name === 'page' ? (
-        <PolicyPage page={route.page} lang={lang} onBack={() => back('/')} />
+        <PolicyPage page={route.page} lang={lang} onBack={() => back('/')} onOpenPage={(k) => navigate(`/${k}`)} />
       ) : (
         <>
       {/* 3. Hero Showcase */}
@@ -470,7 +445,6 @@ export default function App() {
         settings={settings}
         lang={lang}
         onOpenPolicy={(policy) => navigate(`/${policy}`)}
-        onOpenAdmin={handleOpenAdminPortal}
       />
 
       {/* Slide-over Shopping Cart Drawer */}

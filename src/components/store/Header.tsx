@@ -10,15 +10,12 @@ interface HeaderProps {
   onLanguageChange: (lang: Language) => void;
   theme: 'night' | 'light';
   onToggleTheme: () => void;
-  isAuthenticated?: boolean;
-  authenticatedStaffName?: string;
   cartCount: number;
   wishlistCount: number;
   onOpenCart: () => void;
   onOpenWishlist: () => void;
   onOpenSearch: () => void;
   onNavigateSection: (section: string) => void;
-  onOpenAdmin: () => void;
   onOpenTrackOrder: () => void;
 }
 
@@ -28,15 +25,12 @@ export const Header: React.FC<HeaderProps> = ({
   onLanguageChange,
   theme,
   onToggleTheme,
-  isAuthenticated,
-  authenticatedStaffName,
   cartCount,
   wishlistCount,
   onOpenCart,
   onOpenWishlist,
   onOpenSearch,
   onNavigateSection,
-  onOpenAdmin,
   onOpenTrackOrder,
 }) => {
   const iconBtn = 'relative p-2 text-fg-2 hover:text-fg transition-colors cursor-pointer';
@@ -92,14 +86,6 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Language"
           >
             {lang === 'so' ? 'EN' : 'SO'}
-          </button>
-
-          <button
-            onClick={onOpenAdmin}
-            className="hidden md:block px-2 py-1 text-xs tracking-[0.14em] uppercase text-fg-3 hover:text-fg transition-colors cursor-pointer"
-            title={isAuthenticated ? authenticatedStaffName : undefined}
-          >
-            {isAuthenticated ? getTranslation(lang, 'adminPortal') : getTranslation(lang, 'staffPortal')}
           </button>
         </div>
       </div>

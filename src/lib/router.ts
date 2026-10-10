@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 
-// Hash routes (e.g. "#/shop/men") so every page has its own address: refresh keeps you where you are,
-// the browser Back button returns to the previous page, and links can be shared. Hash URLs need no
-// server rewrite rules, so they work on any static host.
+// Clean URLs (e.g. /shop/men, /admin/orders) through the History API: refresh keeps you where you are,
+// the browser Back button returns to the previous page, and links can be shared. The server sends
+// index.html for any path that is not a real file (see public/.htaccess and Vite's dev fallback).
+// Old hash links (/#/shop/men) from before the switch are converted on load.
 
 export type PolicyKey = 'about' | 'authenticity' | 'shipping' | 'returns';
 const POLICIES: PolicyKey[] = ['about', 'authenticity', 'shipping', 'returns'];
@@ -14,15 +15,12 @@ export type Route =
   | { name: 'checkout' }
   | { name: 'track'; orderId?: string }
   | { name: 'page'; page: PolicyKey }
-  | { name: 'login'; next?: string }
   | { name: 'admin'; tab: string };
 
 export type ScrollIntent = 'top' | 'catalog' | 'none';
 
-export function parseRoute(hash: string): Route {
-  const [path, query = ''] = hash.replace(/^#/, '').split('?');
-  const parts = path.split('/').filter(Boolean).map(decodeURIComponent);
-  const params = new URLSearchParams(query);
+export function parseRoute(pathname: string): Route {
+  const parts = pathname.split('/').filter(Boolean).map(decodeURIComponent);
   switch (parts[0]) {
     case undefined:
       return { name: 'home' };
@@ -36,48 +34,54 @@ export function parseRoute(hash: string): Route {
       return { name: 'checkout' };
     case 'track':
       return { name: 'track', orderId: parts[1] };
-    case 'staff-login':
-      return { name: 'login', next: params.get('next') ?? undefined };
+    // Staff area: /admin shows the sign-in form until signed in, then the dashboard
     case 'admin':
-      return { name: 'admin', tab: parts[1] ?? 'dashboard' };
+    case 'staff-login':
+      return { name: 'admin', tab: parts[0] === 'admin' && parts[1] ? parts[1] : 'dashboard' };
     default:
       return POLICIES.includes(parts[0] as PolicyKey) ? { name: 'page', page: parts[0] as PolicyKey } : { name: 'home' };
   }
 }
 
 interface HistoryState {
-  milgo: true;
+  dk: true;
   depth: number; // how many in-app pages sit behind this one
 }
 
 const currentDepth = () => (window.history.state as HistoryState | null)?.depth ?? 0;
 
+// Turn a pre-switch hash URL (/#/shop/men) into its clean path (/shop/men)
+function upgradeHashUrl(): void {
+  const { hash } = window.location;
+  if (hash.startsWith('#/')) window.history.replaceState(window.history.state, '', hash.slice(1));
+}
+
 export function useRouter() {
-  const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash));
+  const [route, setRoute] = useState<Route>(() => {
+    upgradeHashUrl();
+    return parseRoute(window.location.pathname);
+  });
   // Bumped on every navigation (including Back/Forward) so views can re-apply route-driven state
   const [navKey, setNavKey] = useState(0);
   const [scroll, setScroll] = useState<{ intent: ScrollIntent; key: number }>({ intent: 'none', key: 0 });
 
   useEffect(() => {
-    if (!(window.history.state as HistoryState | null)?.milgo) {
-      window.history.replaceState({ milgo: true, depth: 0 } satisfies HistoryState, '');
+    if (!(window.history.state as HistoryState | null)?.dk) {
+      window.history.replaceState({ dk: true, depth: 0 } satisfies HistoryState, '');
     }
-    // Back/Forward and hand-edited URLs: the browser restores the previous scroll position itself
+    // Back/Forward: the browser restores the previous scroll position itself
     const onPop = () => {
-      setRoute(parseRoute(window.location.hash));
+      upgradeHashUrl();
+      setRoute(parseRoute(window.location.pathname));
       setNavKey((k) => k + 1);
     };
     window.addEventListener('popstate', onPop);
-    window.addEventListener('hashchange', onPop);
-    return () => {
-      window.removeEventListener('popstate', onPop);
-      window.removeEventListener('hashchange', onPop);
-    };
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   const navigate = useCallback((path: string, opts: { replace?: boolean; scroll?: ScrollIntent } = {}) => {
-    const url = `#${path.startsWith('/') ? path : `/${path}`}`;
-    const state: HistoryState = { milgo: true, depth: opts.replace ? currentDepth() : currentDepth() + 1 };
+    const url = path.startsWith('/') ? path : `/${path}`;
+    const state: HistoryState = { dk: true, depth: opts.replace ? currentDepth() : currentDepth() + 1 };
     if (opts.replace) window.history.replaceState(state, '', url);
     else window.history.pushState(state, '', url);
     setRoute(parseRoute(url));
