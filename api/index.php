@@ -14,6 +14,7 @@ require __DIR__ . '/lib/orders.php';
 require __DIR__ . '/lib/uploads.php';
 require __DIR__ . '/lib/reviews.php';
 require __DIR__ . '/lib/secrets.php';
+require __DIR__ . '/lib/reset.php';
 
 // Which roles may read / write each shared collection
 const READERS = [
@@ -47,7 +48,7 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     // Browser calls that change data must carry this header; plain cross-site forms cannot set it
-    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check', 'upload', 'review_create', 'review_moderate', 'gateway_keys_save'];
+    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check', 'upload', 'review_create', 'review_moderate', 'gateway_keys_save', 'password_forgot', 'password_reset'];
     if (in_array($a, $writes, true) && (($_SERVER['HTTP_X_DK_CLIENT'] ?? '') !== '1' || $method !== 'POST')) fail(400, 'Bad request.');
 
     switch ($a) {
@@ -84,6 +85,16 @@ try {
             $s = login((string) ($b['identifier'] ?? ''), (string) ($b['password'] ?? ''));
             audit('Staff Authenticated', 'Staff', $s['id'], $s['name'] . ' signed in', $s);
             send_json(['me' => public_staff($s)]);
+
+        // Always the same answer, so the form cannot be used to find out which emails have accounts
+        case 'password_forgot':
+            password_forgot((string) (body()['email'] ?? ''));
+            send_json(['ok' => true]);
+
+        case 'password_reset':
+            $b = body();
+            password_reset((string) ($b['token'] ?? ''), (string) ($b['password'] ?? ''));
+            send_json(['ok' => true]);
 
         case 'logout':
             logout();
@@ -175,6 +186,8 @@ try {
                 db()->prepare('INSERT INTO staff (id, name, email, phone, role, active, password_hash, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
                     ->execute([$id, mb_substr((string) $u['name'], 0, 120), $email, (string) ($u['phone'] ?? ''), $role, $active, $hash, now_iso()]);
             }
+            // Changing your own password keeps you signed in here (other sessions are signed out)
+            if ($id === $me['id']) $_SESSION['pw'] = password_fingerprint(['password_hash' => $hash]);
             audit($existing ? 'Staff Updated' : 'Staff Created', 'Staff', $id, ($u['name'] ?? '') . " ($role)", $me);
             send_json(['staff' => staff_all()]);
 
