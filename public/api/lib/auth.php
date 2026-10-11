@@ -52,7 +52,14 @@ function current_staff(): ?array
     $id = $_SESSION['staff_id'] ?? null;
     if (!$id) return null;
     $s = staff_by_id($id);
-    return $s && $s['active'] ? $s : null;
+    // A changed password (e.g. via "forgot password") signs out every other session
+    if (!$s || !$s['active'] || ($_SESSION['pw'] ?? '') !== password_fingerprint($s)) return null;
+    return $s;
+}
+
+function password_fingerprint(array $staff): string
+{
+    return substr(hash('sha256', (string) $staff['password_hash']), 0, 16);
 }
 
 function permissions_for(?array $staff): array
@@ -99,6 +106,7 @@ function login(string $identifier, string $password): array
     start_session();
     session_regenerate_id(true);
     $_SESSION['staff_id'] = $found['id'];
+    $_SESSION['pw'] = password_fingerprint($found);
     return $found;
 }
 

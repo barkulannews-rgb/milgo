@@ -18,7 +18,8 @@ export type Route =
   | { name: 'checkout' }
   | { name: 'track'; orderId?: string }
   | { name: 'page'; page: PolicyKey }
-  | { name: 'admin'; tab: string };
+  | { name: 'admin'; tab: string }
+  | { name: 'reset' }; // staff password reset from an emailed link (token in ?token=)
 
 export type ScrollIntent = 'top' | 'catalog' | 'none';
 
@@ -38,6 +39,8 @@ export function parseRoute(pathname: string): Route {
     case 'track':
       return { name: 'track', orderId: parts[1] };
     // Staff area: /admin shows the sign-in form until signed in, then the dashboard
+    case 'reset-password':
+      return { name: 'reset' };
     case 'admin':
     case 'staff-login':
       return { name: 'admin', tab: parts[0] === 'admin' && parts[1] ? parts[1] : 'dashboard' };

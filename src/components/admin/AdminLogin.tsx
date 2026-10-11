@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Eye, EyeOff, Sun, Moon } from 'lucide-react';
 import { Language, StaffUser, StoreSettings } from '../../types';
 import { storeRepo } from '../../lib/storage';
+import { api } from '../../lib/api';
 import { getTranslation } from '../../lib/translations';
 import { Logo } from '../brand/Logo';
 
@@ -31,6 +32,24 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showDirectory, setShowDirectory] = useState(false);
+  const [mode, setMode] = useState<'login' | 'forgot' | 'sent'>('login');
+  const so = lang === 'so';
+
+  // Always shows the same confirmation, whether or not the email has an account
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!storeRepo.isServerMode()) return setError(so ? 'Tani waxay u baahan tahay server-ka.' : 'This needs the live server.');
+    setError(null);
+    setIsLoading(true);
+    try {
+      await api.passwordForgot(identifier);
+      setMode('sent');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const staffMembers = storeRepo.getStaff();
 
@@ -92,55 +111,112 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({
 
           {error && <p className="mb-6 text-sm text-red-600 text-center animate-fadeIn">{error}</p>}
 
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div>
-              <label className="block text-[11px] uppercase tracking-[0.14em] text-fg-3 mb-1">{getTranslation(lang, 'emailOrUsername')}</label>
-              <input
-                type="text"
-                required
-                autoComplete="username"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="owner@dkperfume.com"
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] uppercase tracking-[0.14em] text-fg-3 mb-1">{getTranslation(lang, 'password')}</label>
-              <div className="relative">
+          {mode === 'login' && (
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.14em] text-fg-3 mb-1">{getTranslation(lang, 'emailOrUsername')}</label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type="text"
                   required
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`${inputClass} pr-8`}
+                  autoComplete="username"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="owner@dkperfume.com"
+                  className={inputClass}
                 />
+              </div>
+
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.14em] text-fg-3 mb-1">{getTranslation(lang, 'password')}</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={`${inputClass} pr-8`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 text-fg-3 hover:text-fg transition-colors cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-4">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-fg-3">
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="accent-gold" />
+                  <span>{getTranslation(lang, 'rememberMe')}</span>
+                </label>
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 text-fg-3 hover:text-fg transition-colors cursor-pointer"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => {
+                    setMode('forgot');
+                    setError(null);
+                  }}
+                  className="text-xs text-fg-3 hover:text-fg underline underline-offset-4 cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
+                  {so ? 'Password-ka ma ilowday?' : 'Forgot password?'}
                 </button>
               </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 bg-inverse hover:bg-inverse-hover text-on-inverse text-xs uppercase tracking-[0.16em] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isLoading ? getTranslation(lang, 'signingIn') : getTranslation(lang, 'signInBtn')}
+              </button>
+            </form>
+          )}
+
+          {mode === 'forgot' && (
+            <form onSubmit={handleForgot} className="space-y-6">
+              <p className="text-sm text-fg-2 text-center">
+                {so ? 'Geli email-kaaga. Waxaan kuu soo diraynaa link aad password cusub ku samayso.' : 'Enter your email and we will send you a link to set a new password.'}
+              </p>
+              <div>
+                <label className="block text-[11px] uppercase tracking-[0.14em] text-fg-3 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  autoComplete="username"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="owner@dkperfume.com"
+                  className={inputClass}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 bg-inverse hover:bg-inverse-hover text-on-inverse text-xs uppercase tracking-[0.16em] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isLoading ? '…' : so ? 'Dir linkiga' : 'Send reset link'}
+              </button>
+              <button type="button" onClick={() => setMode('login')} className="w-full text-xs text-fg-3 hover:text-fg cursor-pointer">
+                {so ? 'Ku noqo login-ka' : 'Back to sign in'}
+              </button>
+            </form>
+          )}
+
+          {mode === 'sent' && (
+            <div className="text-center space-y-6">
+              <p className="text-sm text-fg-2 leading-relaxed">
+                {so
+                  ? 'Haddii email-kani akoon leeyahay, link ayaa loo diray. Fiiri email-kaaga (iyo Spam). Linkigu wuxuu shaqeynayaa 30 daqiiqo.'
+                  : 'If this email has an account, a reset link is on its way. Check your inbox (and spam). The link works for 30 minutes.'}
+              </p>
+              <button type="button" onClick={() => setMode('login')} className="text-xs text-fg-3 hover:text-fg underline underline-offset-4 cursor-pointer">
+                {so ? 'Ku noqo login-ka' : 'Back to sign in'}
+              </button>
             </div>
-
-            <label className="flex items-center gap-2 cursor-pointer text-xs text-fg-3">
-              <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="accent-gold" />
-              <span>{getTranslation(lang, 'rememberMe')}</span>
-            </label>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-3.5 bg-inverse hover:bg-inverse-hover text-on-inverse text-xs uppercase tracking-[0.16em] transition-colors cursor-pointer disabled:opacity-50"
-            >
-              {isLoading ? getTranslation(lang, 'signingIn') : getTranslation(lang, 'signInBtn')}
-            </button>
-          </form>
+          )}
 
           {!storeRepo.isServerMode() && (
           <div className="mt-10 text-center">

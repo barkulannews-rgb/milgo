@@ -114,6 +114,8 @@ export const api = {
   reviewCreate: (req: ReviewRequest) => call<{ review: Review }>('review_create', { body: req }),
   reviewModerate: (id: string, change: { hidden?: boolean; delete?: boolean }) =>
     call<{ reviews: Review[] }>('review_moderate', { body: { id, ...change } }),
+  passwordForgot: (email: string) => call<{ ok: true }>('password_forgot', { body: { email } }),
+  passwordReset: (token: string, password: string) => call<{ ok: true }>('password_reset', { body: { token, password } }),
   gatewayKeys: () => call<GatewayKeys>('gateway_keys'),
   gatewayKeysSave: (change: Partial<Record<GatewayKeyField, string>> & { clear?: GatewayKeyField[] }) =>
     call<GatewayKeys>('gateway_keys_save', { body: change, timeoutMs: 30000 }),

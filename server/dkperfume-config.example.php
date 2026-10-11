@@ -15,6 +15,9 @@ return [
 
     'site_url' => 'https://dkperfume.com',
 
+    // Sender for staff emails (password reset). Default: the store email if it is @dkperfume.com.
+    // 'mail_from' => 'info@dkperfume.com',
+
     // Uploaded photos are kept here (created automatically). Default: dk-uploads next to this file.
     // 'uploads_dir' => '/home/u123456789/domains/dkperfume.com/dk-uploads',
 

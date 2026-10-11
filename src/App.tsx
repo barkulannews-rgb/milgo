@@ -27,6 +27,7 @@ import { helpPagesOf } from './lib/helpPages';
 
 // Admin ERP & Auth components
 import { AdminLogin } from './components/admin/AdminLogin';
+import { AdminResetPassword } from './components/admin/AdminResetPassword';
 import { AdminLayout, AdminTab } from './components/admin/AdminLayout';
 
 const ADMIN_TABS: AdminTab[] = ['dashboard', 'orders', 'products', 'inventory', 'purchases', 'delivery', 'promotions', 'hero', 'expenses', 'finances', 'reports', 'users', 'payments', 'settings'];
@@ -290,6 +291,11 @@ export default function App() {
     setAuthenticatedStaff(null);
     navigate('/');
   };
+
+  // Password reset from the emailed link
+  if (route.name === 'reset') {
+    return <AdminResetPassword settings={settings} lang={lang} onDone={() => navigate('/admin', { replace: true })} />;
+  }
 
   // Render Admin ERP view (Strictly protected by authentication)
   if (route.name === 'admin') {
