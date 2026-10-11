@@ -13,6 +13,7 @@ require __DIR__ . '/lib/payments.php';
 require __DIR__ . '/lib/orders.php';
 require __DIR__ . '/lib/uploads.php';
 require __DIR__ . '/lib/reviews.php';
+require __DIR__ . '/lib/secrets.php';
 
 // Which roles may read / write each shared collection
 const READERS = [
@@ -46,7 +47,7 @@ try {
     $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
     // Browser calls that change data must carry this header; plain cross-site forms cannot set it
-    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check', 'upload', 'review_create', 'review_moderate'];
+    $writes = ['login', 'logout', 'save', 'staff_save', 'staff_delete', 'order_create', 'order_update', 'audit', 'coupon_check', 'upload', 'review_create', 'review_moderate', 'gateway_keys_save'];
     if (in_array($a, $writes, true) && (($_SERVER['HTTP_X_DK_CLIENT'] ?? '') !== '1' || $method !== 'POST')) fail(400, 'Bad request.');
 
     switch ($a) {
@@ -120,6 +121,16 @@ try {
 
         case 'img':
             send_upload((string) ($_GET['f'] ?? ''));
+
+        // Payment provider keys: owner only; values are never returned, just masked hints
+        case 'gateway_keys':
+            $me = require_any(['payments']);
+            if ($me['role'] !== 'owner') fail(403, 'Only the owner can see payment keys.');
+            send_json(gateway_keys_status());
+
+        case 'gateway_keys_save':
+            $me = require_any(['payments']);
+            send_json(gateway_keys_save(body(), $me));
 
         case 'reviews':
             send_json(['reviews' => product_reviews((string) ($_GET['product'] ?? ''))]);

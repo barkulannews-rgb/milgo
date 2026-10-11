@@ -1,15 +1,14 @@
 <?php
 // Real payments. Card, Apple Pay and Google Pay go through Stripe Checkout (Stripe's hosted, PCI-compliant
-// page); PayPal through PayPal Checkout. Secret keys come from the server config only.
+// page); PayPal through PayPal Checkout. Keys come from the admin (owner only) or the server config (see secrets.php).
 // An order becomes "Paid" only when Stripe's signed webhook or PayPal's capture confirms the money.
 
 declare(strict_types=1);
 
 function gateway_ready(string $gateway): bool
 {
-    $c = config();
-    if ($gateway === 'Stripe') return !empty($c['stripe_secret_key']);
-    if ($gateway === 'PayPal') return !empty($c['paypal_client_id']) && !empty($c['paypal_secret']);
+    if ($gateway === 'Stripe') return secret('stripe_secret_key') !== '';
+    if ($gateway === 'PayPal') return secret('paypal_client_id') !== '' && secret('paypal_secret') !== '';
     return false;
 }
 
@@ -49,7 +48,7 @@ function stripe_checkout(array $order): string
     ];
     if (!empty($order['customerEmail'])) $params['customer_email'] = $order['customerEmail'];
     [$status, $res] = http_call('POST', 'https://api.stripe.com/v1/checkout/sessions', [
-        'Authorization: Bearer ' . config()['stripe_secret_key'],
+        'Authorization: Bearer ' . secret('stripe_secret_key'),
         'Content-Type: application/x-www-form-urlencoded',
     ], http_build_query($params));
     if ($status >= 300 || empty($res['url'])) fail(502, 'Could not start card payment: ' . ($res['error']['message'] ?? 'unknown error'));
@@ -59,7 +58,7 @@ function stripe_checkout(array $order): string
 function stripe_webhook(): void
 {
     $payload = file_get_contents('php://input') ?: '';
-    $secret = config()['stripe_webhook_secret'] ?? '';
+    $secret = secret('stripe_webhook_secret');
     $sig = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
     if ($secret === '' || $sig === '') fail(400, 'Missing signature.');
     $parts = [];
@@ -97,14 +96,13 @@ function stripe_webhook(): void
 
 function paypal_base(): string
 {
-    return (config()['paypal_mode'] ?? 'live') === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
+    return secret('paypal_mode') === 'sandbox' ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com';
 }
 
 function paypal_token(): string
 {
-    $c = config();
     [$status, $res] = http_call('POST', paypal_base() . '/v1/oauth2/token', [
-        'Authorization: Basic ' . base64_encode($c['paypal_client_id'] . ':' . $c['paypal_secret']),
+        'Authorization: Basic ' . base64_encode(secret('paypal_client_id') . ':' . secret('paypal_secret')),
         'Content-Type: application/x-www-form-urlencoded',
     ], 'grant_type=client_credentials');
     if ($status >= 300 || empty($res['access_token'])) fail(502, 'PayPal sign-in failed.');
