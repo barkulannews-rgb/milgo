@@ -18,6 +18,7 @@ import {
 } from '../../lib/countries';
 
 import { formatMoney, BASE_CURRENCY } from '../../lib/money';
+import { SheetPicker, flagEmoji } from './SheetPicker';
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -366,15 +367,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div className="space-y-4">
               <div>
                 <label className={label}>
-                                    {so ? 'Dalka' : 'Country'} *
+                  {so ? 'Dalka' : 'Country'} *
                 </label>
-                <select value={country} onChange={(e) => setCountry(e.target.value)} autoComplete="country" className={inputClass}>
-                  {countries.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+<SheetPicker
+                  title={so ? 'Dooro dalka' : 'Choose country'}
+                  items={countries.map((c) => ({ id: c.code, label: c.name, lead: flagEmoji(c.code), search: countryName(c.code, 'en') }))}
+                  value={country}
+                  onChange={setCountry}
+                  popular={[...new Set([HQ_COUNTRY, SOMALIA, browserCountry() ?? ''])].filter((c) => countries.some((x) => x.code === c))}
+                  searchPlaceholder={so ? 'Raadi dal…' : 'Search country…'}
+                  popularLabel={so ? 'Kuwa caanka ah' : 'Popular'}
+                  allLabel={so ? 'Dhammaan dalalka' : 'All countries'}
+                  emptyLabel={so ? 'Lama helin' : 'No country found'}
+                  triggerClassName={`${inputClass} !py-3`}
+                />
               </div>
 
               {freeFrom != null && !freeDelivery && selectedZone && (
@@ -396,13 +402,58 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <label className={label}>
                     {cityZones ? (so ? 'Magaalada & Goobta' : 'City & Area') : so ? 'Habka Dirista' : 'Shipping'}
                   </label>
-                  <select value={selectedZone?.id} onChange={(e) => setSelectedZoneId(e.target.value)} className={inputClass}>
-                    {zones.map((z) => (
-                      <option key={z.id} value={z.id}>
-                        {cityZones ? `${z.city} — ${z.zoneName}` : z.zoneName} ({formatMoney(z.deliveryFee)} · {z.estimatedHours})
-                      </option>
-                    ))}
-                  </select>
+{zones.length <= 4 ? (
+                    // Few options: show them all as cards, price and delivery time at a glance
+                    <div className="space-y-2" role="radiogroup">
+                      {zones.map((z) => {
+                        const active = selectedZone?.id === z.id;
+                        const free = z.freeShippingFrom != null && subtotal >= z.freeShippingFrom;
+                        return (
+                          <button
+                            key={z.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={active}
+                            onClick={() => setSelectedZoneId(z.id)}
+                            className={`w-full flex items-center gap-3 p-3.5 border text-left transition-colors cursor-pointer ${
+                              active ? 'border-fg bg-surface-2' : 'border-line hover:border-line-strong'
+                            }`}
+                          >
+                            <span className={`w-4 h-4 rounded-full border shrink-0 flex items-center justify-center ${active ? 'border-fg' : 'border-line-strong'}`}>
+                              {active && <span className="w-2 h-2 rounded-full bg-fg" />}
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-sm text-fg">{cityZones ? `${z.city} · ${z.zoneName}` : z.zoneName}</span>
+                              <span className="block text-xs text-fg-3 mt-0.5">{z.estimatedHours}</span>
+                            </span>
+                            <span className={`text-sm font-mono shrink-0 ${free ? 'text-emerald-700' : 'text-fg'}`}>
+                              {free || z.deliveryFee === 0 ? (so ? 'Bilaash' : 'Free') : formatMoney(z.deliveryFee)}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    // Many options (e.g. city districts): searchable sheet
+                    <SheetPicker
+                      title={cityZones ? (so ? 'Dooro goobta' : 'Choose area') : so ? 'Habka dirista' : 'Shipping'}
+                      items={zones.map((z) => {
+                        const free = z.freeShippingFrom != null && subtotal >= z.freeShippingFrom;
+                        return {
+                          id: z.id,
+                          label: cityZones ? `${z.city} · ${z.zoneName}` : z.zoneName,
+                          sub: z.estimatedHours,
+                          right: free || z.deliveryFee === 0 ? (so ? 'Bilaash' : 'Free') : formatMoney(z.deliveryFee),
+                          search: z.city,
+                        };
+                      })}
+                      value={selectedZone?.id ?? ''}
+                      onChange={setSelectedZoneId}
+                      searchPlaceholder={so ? 'Raadi…' : 'Search…'}
+                      emptyLabel={so ? 'Lama helin' : 'Nothing found'}
+                      triggerClassName={`${inputClass} !py-3`}
+                    />
+                  )}
                 </div>
               )}
 
