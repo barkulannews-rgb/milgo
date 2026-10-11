@@ -75,6 +75,14 @@ export type TrackedOrder = Pick<Order, 'id' | 'city' | 'orderStatus' | 'assigned
   ratings?: Record<string, number>; // stars already given on this order, by product
 };
 
+export type GatewayKeyField = 'stripe_secret_key' | 'stripe_webhook_secret' | 'paypal_client_id' | 'paypal_secret' | 'paypal_mode';
+
+export interface GatewayKeys {
+  keys: Record<GatewayKeyField, { set: boolean; source: 'admin' | 'config' | ''; hint: string }>;
+  webhookUrl: string;
+  ready: { stripe: boolean; stripeWebhook: boolean; paypal: boolean };
+}
+
 export type PublicReview = Pick<Review, 'id' | 'name' | 'rating' | 'text' | 'createdAt'>;
 
 export interface ReviewRequest {
@@ -106,5 +114,8 @@ export const api = {
   reviewCreate: (req: ReviewRequest) => call<{ review: Review }>('review_create', { body: req }),
   reviewModerate: (id: string, change: { hidden?: boolean; delete?: boolean }) =>
     call<{ reviews: Review[] }>('review_moderate', { body: { id, ...change } }),
+  gatewayKeys: () => call<GatewayKeys>('gateway_keys'),
+  gatewayKeysSave: (change: Partial<Record<GatewayKeyField, string>> & { clear?: GatewayKeyField[] }) =>
+    call<GatewayKeys>('gateway_keys_save', { body: change, timeoutMs: 30000 }),
   track: (id: string, phone: string) => call<{ order: TrackedOrder }>('track', { query: { id, phone } }),
 };

@@ -25,7 +25,9 @@ in your backups together with the database.
 
 ## Payments
 
-Add keys to the config file (never to git):
+The owner can connect Stripe and PayPal in **Admin → Payments** (keys are checked with the provider,
+stored server-side, never shown again; only the owner can change them). Alternatively add them to the
+config file (never to git); keys entered in the admin take precedence:
 
 - **Stripe** (cards, Apple Pay, Google Pay): `stripe_secret_key`, and a webhook to
   `https://dkperfume.com/api/?a=stripe_webhook` for `checkout.session.completed` → `stripe_webhook_secret`.

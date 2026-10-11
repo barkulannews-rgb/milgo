@@ -13,12 +13,12 @@ import {
   FlaskConical,
   Plus,
   X,
-  ShieldAlert,
 } from 'lucide-react';
 import { Language, MarketSettings, PaymentSettings, StoreSettings } from '../../types';
 import { storeRepo } from '../../lib/storage';
 import { CARD_BRANDS } from '../../lib/countries';
 import { CountryPicker } from './CountryPicker';
+import { AdminGatewayKeys } from './AdminGatewayKeys';
 
 interface AdminPaymentsProps {
   lang: Language;
@@ -133,29 +133,9 @@ export const AdminPayments: React.FC<AdminPaymentsProps> = ({ lang, onSettingsUp
         </div>
       )}
 
-      {/* Connection status: real payments need the server plus each provider's keys */}
+      {/* Stripe & PayPal connection (owner only); without a server the site runs as a demo */}
       {storeRepo.isServerMode() ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {(
-            [
-              ['Stripe', storeRepo.getGateways().stripe, so ? 'Kaar, Apple Pay, Google Pay' : 'Cards, Apple Pay, Google Pay'],
-              ['PayPal', storeRepo.getGateways().paypal, 'PayPal'],
-            ] as const
-          ).map(([name, ok, what]) => (
-            <div key={name} className={`px-5 py-4 border ${ok ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
-              <p className="font-semibold">
-                {name}: {ok ? (so ? 'Waa xiran yahay, lacag dhab ah' : 'Connected, live payments') : so ? 'Lama xirin' : 'Not connected'}
-              </p>
-              <p className="mt-1">
-                {ok
-                  ? what
-                  : so
-                  ? `${what} kama muuqdaan checkout-ka ilaa furayaasha ${name} la geliyo faylka config-ka server-ka.`
-                  : `${what} stay hidden at checkout until the ${name} keys are added to the server config file.`}
-              </p>
-            </div>
-          ))}
-        </div>
+        <AdminGatewayKeys lang={lang} isOwner={storeRepo.getAuthenticatedStaff()?.role === 'owner'} />
       ) : (
         <div className="px-5 py-4 border border-amber-200 bg-amber-50 text-amber-800">
           <p className="font-semibold">{so ? 'Habka tijaabada (server la\'aan)' : 'Demo mode (no server)'}</p>
@@ -219,20 +199,6 @@ export const AdminPayments: React.FC<AdminPaymentsProps> = ({ lang, onSettingsUp
             })}
           </div>
         </div>
-        <div>
-          <label className={label}>Stripe Publishable Key</label>
-          <input
-            type="text"
-            value={payments.cards.stripePublishableKey}
-            onChange={(e) => setP('cards', { ...payments.cards, stripePublishableKey: e.target.value.trim() })}
-            placeholder="pk_live_…"
-            className={`${inputClass} font-mono`}
-          />
-          <p className="text-[11px] text-fg-3 mt-1 flex items-start gap-1">
-            <ShieldAlert className="w-3.5 h-3.5 shrink-0" />
-            {so ? 'Kaliya furaha pk_. Furaha sk_ halkan ha gelin.' : 'Publishable key (pk_) only. Never paste the secret key here.'}
-          </p>
-        </div>
       </Section>
 
       {/* PayPal */}
@@ -242,18 +208,7 @@ export const AdminPayments: React.FC<AdminPaymentsProps> = ({ lang, onSettingsUp
         subtitle={so ? 'Akoon ama kaar' : 'Account or card'}
         enabled={payments.paypal.enabled}
         onToggle={(v) => setP('paypal', { ...payments.paypal, enabled: v })}
-      >
-        <div>
-          <label className={label}>PayPal Client ID</label>
-          <input
-            type="text"
-            value={payments.paypal.clientId}
-            onChange={(e) => setP('paypal', { ...payments.paypal, clientId: e.target.value.trim() })}
-            placeholder="AY…"
-            className={`${inputClass} font-mono`}
-          />
-        </div>
-      </Section>
+      />
 
       {/* Digital wallets */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
